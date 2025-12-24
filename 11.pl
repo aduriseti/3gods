@@ -424,7 +424,7 @@ find_improving_question(MaxComplexity, BestQuestion) :-
 
 test('analyze the partition created by the "golden question"') :-
     % 1. Setup (parameters, question, families - this is all the same)
-    NumPos = 3,
+    NumPos = 3, 
     NumQs = 3,
     GodTypes = [truly, falsely, random],
     GoldenQ = ( (at_position_question(1, truly), at_position_question(2, random))

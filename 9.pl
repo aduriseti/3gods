@@ -581,7 +581,7 @@ test('improve_question: correctly stops when it finds a perfect score') :-
     % Start with a perfect question.
     BestBaseQ = q(1, true),
     BestBaseScore = 1,
-    % Call improve_question. Since no composition can be better than a
+    % C question. Since no composition can be better than a
     % perfect score of 1, it should immediately return the same question.
     improve_question(
         Worlds,             % Context
