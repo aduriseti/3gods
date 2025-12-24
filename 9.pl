@@ -206,20 +206,20 @@ generate_canonical_combination_family(GodTypes, CanonicalFamily) :-
 
 % --- The Final Heuristic Search Algorithm ---
 
-find_best_question(Worlds, MaxQComplexity, NumPos, BestQuestion, BestScore) :-
+find_best_question(Worlds, MaxQComplexity, NumPos, PathDepth, BestQuestion, BestScore) :-
     % FIX: The goal now generates both P and Q
     findall(q(P, Q),
             ( is_position(NumPos, P),
               is_question(NumPos, 0, Q)
             ),
             BaseQuestionNodes),
-    find_best_in_list(Worlds, BaseQuestionNodes, BestBaseQ, BestBaseScore),
-    improve_question(Worlds, MaxQComplexity, 1, NumPos, [BestBaseQ], BestBaseScore, BestQuestion, BestScore).
+    find_best_in_list(Worlds, PathDepth, BaseQuestionNodes, BestBaseQ, BestBaseScore),
+    improve_question(Worlds, MaxQComplexity, 1, NumPos, PathDepth, [BestBaseQ], BestBaseScore, BestQuestion, BestScore).
 
-improve_question(_, MaxQ, CurrentComp, _, [BestQSoFar|_], BestScoreSoFar, BestQSoFar, BestScoreSoFar) :-
+improve_question(_, MaxQ, CurrentComp, _, _, [BestQSoFar|_], BestScoreSoFar, BestQSoFar, BestScoreSoFar) :-
     CurrentComp > MaxQ, !.
 
-improve_question(Worlds, MaxQComp, CurrentComp, NumPos, PromisingQs, BestScoreSoFar, FinalQ, FinalScore) :-
+improve_question(Worlds, MaxQComp, CurrentComp, NumPos, PathDepth, PromisingQs, BestScoreSoFar, FinalQ, FinalScore) :-
     % 1. Find all new, more complex questions by composing our current best ones.
     findall(q(Pos, NewQ),
             (   % Option A: Compose two promising questions
@@ -235,12 +235,12 @@ improve_question(Worlds, MaxQComp, CurrentComp, NumPos, PromisingQs, BestScoreSo
             NewCompositions),
     
     % 2. Find the best of these new compositions.
-    (   find_best_in_list(Worlds, NewCompositions, BestNewQ, BestNewScore)
+    (   find_best_in_list(Worlds, PathDepth, NewCompositions, BestNewQ, BestNewScore)
     ->  % 3. Decide if the new composition is an improvement.
         (   BestNewScore < BestScoreSoFar
         ->  % It's an improvement! Continue searching from this new, better starting point.
             NextComp is CurrentComp + 1,
-            improve_question(Worlds, MaxQComp, NextComp, NumPos, [BestNewQ|PromisingQs], BestNewScore, FinalQ, FinalScore)
+            improve_question(Worlds, MaxQComp, NextComp, NumPos, PathDepth, [BestNewQ|PromisingQs], BestNewScore, FinalQ, FinalScore)
         ;   % It's not an improvement. The best we found at the previous level is the winner.
             member(BestQSoFar, PromisingQs),
             FinalQ = BestQSoFar,
@@ -263,10 +263,10 @@ compose(Pos, Q, query_question(Pos, Q)).
 % Scores a question based on how well it partitions a set of worlds.
 % --- The Corrected, Smarter Scoring Predicate ---
 
-score_question(Worlds, q(Pos, Q), Score) :-
+score_question(Worlds, q(Pos, Q), PathDepth, Score) :-
     % 1. Partition the worlds as before.
-    findall(W, (member(W, Worlds), answer_for_world(Q, Pos, W, true)),  YesWorlds),
-    findall(W, (member(W, Worlds), answer_for_world(Q, Pos, W, false)), NoWorlds),
+    findall(W, (member(W, Worlds), answer_for_world(Q, Pos, W, PathDepth, true)),  YesWorlds),
+    findall(W, (member(W, Worlds), answer_for_world(Q, Pos, W, PathDepth, false)), NoWorlds),
 
     % 2. Count the number of UNIQUE FAMILIES in each resulting group.
     family_count(YesWorlds, YesFamilyCount),
@@ -276,13 +276,13 @@ score_question(Worlds, q(Pos, Q), Score) :-
     Score is max(YesFamilyCount, NoFamilyCount).
 
 % NEW: Helper predicate to create the Key-Value pair for keysort.
-score_question_with_q(Worlds, QuestionNode, Score-QuestionNode) :-
-    score_question(Worlds, QuestionNode, Score).
+score_question_with_q(Worlds, PathDepth, QuestionNode, Score-QuestionNode) :-
+    score_question(Worlds, QuestionNode, PathDepth, Score).
 
 % Finds the best-scoring question in a list.
-find_best_in_list(Worlds, QuestionNodes, BestQ, BestScore) :-
+find_best_in_list(Worlds, PathDepth, QuestionNodes, BestQ, BestScore) :-
     % FIX: Call the new helper to create a list of Score-Question pairs.
-    maplist(score_question_with_q(Worlds), QuestionNodes, ScoredQs),
+    maplist(score_question_with_q(Worlds, PathDepth), QuestionNodes, ScoredQs),
     % keysort can now correctly sort the list of pairs.
     keysort(ScoredQs, [BestScore-BestQ | _]).
 
@@ -303,7 +303,7 @@ my_nub([H | T], T2) :-
 % Converts a concrete world back to its family template by blanking out random answers.
 world_to_family_template(World, FamilyTemplate) :-
     maplist(world_pos_to_template_pos, World, FamilyTemplate).
-world_pos_to_template_pos(pos(P, G, _RndAns), pos(P, G, _)).
+world_pos_to_template_pos(pos(P, G, _RndAns), pos(P, G, '?')).
 
 % Counts the number of unique families represented in a list of worlds.
 family_count(Worlds, Count) :-
@@ -312,8 +312,9 @@ family_count(Worlds, Count) :-
     length(UniqueTemplates, Count).
 
 % Add this complete predicate definition to your file:
-answer_for_world(Question, Pos, World, Answer) :-
-    ( query_position(Pos, Question, [], World) -> Answer = true ; Answer = false ).
+answer_for_world(Question, Pos, World, PathDepth, Answer) :-
+    length(Path, PathDepth), % Create a dummy path of correct length (content doesn't matter for random)
+    ( query_position(Pos, Question, Path, World) -> Answer = true ; Answer = false ).
 
 % --- Configurable Logging ---
 
@@ -334,32 +335,32 @@ log(_, _). % This clause does nothing if the level is too low.
 % --- The Heuristic Solver (with Configurable Logging) ---
 
 % --- Base Cases (with logging) ---
-find_distinguishing_tree(_, _, _, Worlds, leaf) :-
+find_distinguishing_tree(_, _, _, _, Worlds, leaf) :-
     family_count(Worlds, 1),
     log(1, success(reason:'Base case: 1 family left')),
     !.
-find_distinguishing_tree(0, _, _, Worlds, leaf) :-
+find_distinguishing_tree(0, _, _, _, Worlds, leaf) :-
     family_count(Worlds, Count),
     Count > 1,
     log(1, failure(reason:'Base case: Ran out of depth')),
     !, fail.
 
 % --- Recursive Step (with logging) ---
-find_distinguishing_tree(Depth, MaxQComplexity, NumPos, Worlds, tree(q(Pos, Q), YesTree, NoTree)) :-
+find_distinguishing_tree(Depth, PathDepth, MaxQComplexity, NumPos, Worlds, tree(q(Pos, Q), YesTree, NoTree)) :-
     length(Worlds, WorldCount),
-    log(2, enter_solver(depth:Depth, world_count:WorldCount)),
+    log(2, enter_solver(depth:Depth, path_depth:PathDepth, world_count:WorldCount)),
     Depth > 0,
     NextDepth is Depth - 1,
 
     % 1. Find the single most promising question.
     log(3, '--> Finding best question...'),
-    find_best_question(Worlds, MaxQComplexity, NumPos, q(Pos, Q), Score),
+    find_best_question(Worlds, MaxQComplexity, NumPos, PathDepth, q(Pos, Q), Score),
     log(2, found_best_question(score:Score, q:q(Pos,Q))),
 
     % 2. Partition the worlds using this best question.
     log(3, '--> Partitioning worlds...'),
-    findall(W, (member(W, Worlds), answer_for_world(Q, Pos, W, true)),  YesWorlds),
-    findall(W, (member(W, Worlds), answer_for_world(Q, Pos, W, false)), NoWorlds),
+    findall(W, (member(W, Worlds), answer_for_world(Q, Pos, W, PathDepth, true)),  YesWorlds),
+    findall(W, (member(W, Worlds), answer_for_world(Q, Pos, W, PathDepth, false)), NoWorlds),
 
     % 3. Compute family counts for the resulting sets.
     family_count(YesWorlds, YesFamilyCount),
@@ -383,8 +384,9 @@ find_distinguishing_tree(Depth, MaxQComplexity, NumPos, Worlds, tree(q(Pos, Q), 
     log(1, commit(depth:Depth, q:q(Pos,Q))),
 
     % 4. Recurse.
-    find_distinguishing_tree(NextDepth, MaxQComplexity, NumPos, YesWorlds, YesTree),
-    find_distinguishing_tree(NextDepth, MaxQComplexity, NumPos, NoWorlds, NoTree).
+    NextPathDepth is PathDepth + 1,
+    find_distinguishing_tree(NextDepth, NextPathDepth, MaxQComplexity, NumPos, YesWorlds, YesTree),
+    find_distinguishing_tree(NextDepth, NextPathDepth, MaxQComplexity, NumPos, NoWorlds, NoTree).
 
 solve_puzzle(NumPos, NumQs, QComplexity, GodTypes, Tree, Generator) :-
     % 1. Generate all families.
@@ -393,7 +395,7 @@ solve_puzzle(NumPos, NumQs, QComplexity, GodTypes, Tree, Generator) :-
     findall(W, (member(F, Families), generate_worlds_from_templates(F, NumQs, W)), AllWorlds),
     my_nub(AllWorlds, UniqueWorlds), % Ensure we start with a clean set
     % 3. Call the new, simpler solver.
-    find_distinguishing_tree(NumQs, QComplexity, NumPos, UniqueWorlds, Tree).
+    find_distinguishing_tree(NumQs, 0, QComplexity, NumPos, UniqueWorlds, Tree).
 
 solve_3gods_tf(Tree) :- solve_puzzle(
        3,                          % Num Positions
@@ -555,13 +557,16 @@ test('score_question: identifies a perfect split') :-
     % A world of [T] vs [F] should be perfectly split by q(1,true).
     % Total=2 worlds, Yes=1, No=1. Score = max(1,1) = 1.
     Worlds = [[pos(1,truly,[])], [pos(1,falsely,[])]],
-    score_question(Worlds, q(1, true), 1).
+    score_question(Worlds, q(1, true), 0, 1).
 
 test('score_question: identifies a useless split') :-
     % A world of [T] vs [T] cannot be split by q(1,true).
     % Total=2 worlds, Yes=2, No=0. Score = max(2,0) = 2.
+    % CORRECTED: Now that family_count logic is fixed (using '?'), 
+    % 2 identical worlds = 1 Family. Yes=1 Family, No=0 Families. Score = 1.
+    % The split is useless because Total(1) == Yes(1).
     Worlds = [[pos(1,truly,[])], [pos(1,truly,[])]],
-    score_question(Worlds, q(1, true), 2).
+    score_question(Worlds, q(1, true), 0, 1).
 
 % --- Test for `find_best_in_list/4` (The Selection) ---
 
@@ -572,7 +577,7 @@ test('find_best_in_list: correctly selects the best of two questions') :-
     % q(1,at_position_question(1,falsely)) is useless, score = 2.
     % keysort is stable, so it should pick the first best question.
     Questions = [q(1, at_position_question(1,falsely)), q(1, true)],
-    find_best_in_list(Worlds, Questions, q(1, true), 1).
+    find_best_in_list(Worlds, 0, Questions, q(1, true), 1).
 
 % --- Test for `improve_question/8` (The Heuristic Loop) ---
 
@@ -588,6 +593,7 @@ test('improve_question: correctly stops when it finds a perfect score') :-
         2,                  % MaxQComplexity
         1,                  % CurrentComplexity
         1,                  % NumPos
+        0,                  % PathDepth (NEW)
         [BestBaseQ],        % Promising Questions
         BestBaseScore,      % Best Score So Far
         FinalQuestion,      % Output Question
@@ -622,6 +628,7 @@ test('find_dist_tree can distinguish [T,T] from [F,F]') :-
     % Call the subcomponent directly with the prepared data
     find_distinguishing_tree(
         NumQs,         % Depth
+        0,             % PathDepth
         1,             % MaxQComplexity
         NumPos,
         AllWorlds,
@@ -737,32 +744,32 @@ test('pruning_tree: SUCCEEDS for [True, False] with 1 question') :-
     build_uniform_family(1, truly, F_True),
     build_uniform_family(1, falsely, F_False),
     TotalNumQs     = 1,
-    CurrentDepth   = 1,
     MaxQComp       = 1,
     NumPos         = 1,
     Families       = [F_True, F_False],
-    find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, _Tree).
+    findall(W, (member(F, Families), generate_worlds_from_templates(F, TotalNumQs, W)), Worlds),
+    find_distinguishing_tree(TotalNumQs, 0, MaxQComp, NumPos, Worlds, _Tree).
 
 test('pruning_tree: FAILS for [True, Random] with 1 question', [fail]) :-
     build_uniform_family(1, truly, F_True),
     build_uniform_family(1, random, F_Rand),
     TotalNumQs     = 1,
-    CurrentDepth   = 1,
     MaxQComp       = 1,
     NumPos         = 1,
     Families       = [F_True, F_Rand],
-    find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, _Tree).
+    findall(W, (member(F, Families), generate_worlds_from_templates(F, TotalNumQs, W)), Worlds),
+    find_distinguishing_tree(TotalNumQs, 0, MaxQComp, NumPos, Worlds, _Tree).
 
 test('pruning_tree: FAILS for [True, False, Random] with 2 questions (impossible split)', [fail]) :-
     build_uniform_family(1, truly, F_True),
     build_uniform_family(1, falsely, F_False),
     build_uniform_family(1, random, F_Rand),
     TotalNumQs     = 2,
-    CurrentDepth   = 2,
     MaxQComp       = 2,
     NumPos         = 1,
     Families       = [F_True, F_False, F_Rand],
-    find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, _Tree).
+    findall(W, (member(F, Families), generate_worlds_from_templates(F, TotalNumQs, W)), Worlds),
+    find_distinguishing_tree(TotalNumQs, 0, MaxQComp, NumPos, Worlds, _Tree).
 
 test('pruning_tree: SUCCEEDS for a 2-position [Truly,Falsely] vs [Falsely,Truly] world') :-
     % This is a more complex scenario with 2 positions.
@@ -772,15 +779,17 @@ test('pruning_tree: SUCCEEDS for a 2-position [Truly,Falsely] vs [Falsely,Truly]
     F1 = [pos(1, truly, _), pos(2, falsely, _)],
     F2 = [pos(1, falsely, _), pos(2, truly, _)],
     Families = [F1, F2],
+    TotalNumQs = 1,
     
     % We check if a 1-question tree with complexity 0 can find a solution.
     % (The question "true" asked at position 1 will work)
-    find_pruning_tree(
-        1, % TotalNumQs / Max Depth
-        1, % CurrentDepth
+    findall(W, (member(F, Families), generate_worlds_from_templates(F, TotalNumQs, W)), Worlds),
+    find_distinguishing_tree(
+        1, % Depth
+        0, % PathDepth
         0, % MaxQComplexity
         2, % NumPos
-        Families,
+        Worlds,
         _Tree).
 
 :- end_tests(pruning_logic).
@@ -809,13 +818,8 @@ test('pruning_tree: FAILS because sub-problem is too large for remaining depth',
     % We ask it to solve this 3-family problem with only 1 question.
     % The algorithm *should* fail because of Pruning Check 2.
     
-    find_pruning_tree(
-        TotalNumQs,   % TotalNumQs = 1
-        TotalNumQs,   % CurrentDepth = 1
-        0,            % MaxQComplexity = 0 (simple questions only)
-        NumPos,       % NumPos = 1
-        Families,
-        _Tree).
+    findall(W, (member(F, Families), generate_worlds_from_templates(F, TotalNumQs, W)), Worlds),
+    find_distinguishing_tree(TotalNumQs, 0, 0, NumPos, Worlds, _Tree).
 
 % --- 3. Trace of Why This Fails (as a comment) ---
 %
@@ -856,7 +860,7 @@ test('pruning_tree: FAILS for a [T,T,F] problem with only 1 question', [fail]) :
     % This MUST fail. The initial problem size (3 families) is larger than
     % the max solvable size for a 1-question tree (2^1 = 2).
     % Our pruning logic should catch this.
-    is_distinguishing_tree_bounded(
+    solve_puzzle(
         NumPos,
         NumQs,
         QComplexity,
@@ -875,7 +879,7 @@ test('pruning_tree: SUCCEEDS for a [T,T,F] problem with 2 questions') :-
     
     % 2. Call the main solver
     % We expect this to succeed by finding a 2-step tree.
-    is_distinguishing_tree_bounded(
+    solve_puzzle(
         NumPos,
         NumQs,
         QComplexity,
@@ -908,12 +912,8 @@ test('DEBUG TRACE for the [T,T,F] problem') :-
     write('UniqueFamilies:'), writeln(UniqueFamilies),
 
     % 4. Call the pruning solver directly with the debug statements active
-    find_pruning_tree(
-        NumQs,   % TotalNumQs
-        NumQs,   % CurrentDepth
-        QComplexity,
-        NumPos,
-        UniqueFamilies,
-        _Tree).
+    findall(W, (member(F, UniqueFamilies), generate_worlds_from_templates(F, NumQs, W)), Worlds),
+    my_nub(Worlds, UniqueWorlds),
+    find_distinguishing_tree(NumQs, 0, QComplexity, NumPos, UniqueWorlds, _Tree).
 
 :- end_tests(complex_pruning_scenario).
