@@ -33,7 +33,7 @@ query(random, _Question, Path, _WorldState, RndAnsList) :-
 
 % evaluate(Question, WorldState)
 % This predicate handles each type of question from your grammar explicitly.
-:- table evaluate/3.
+% :- table evaluate/3.
 
 % 1. Evaluate logical AND
 evaluate((Q1, Q2), Path, WorldState) :-
@@ -304,16 +304,10 @@ partition_families(Families, NumQs, QuestionNode, YesFamilies, NoFamilies) :-
     maplist(get_single_question_signature(QuestionNode, NumQs), Families, Signatures),
 
     % Group families based on their signature for this question.
-    % FIX: Check for [true], not [[true]].
-    findall(F, (nth1(I, Families, F), nth1(I, Signatures, [true])), YesFamilies),
-    % FIX: Check for [fail], not [[fail]].
-    findall(F, (nth1(I, Families, F), nth1(I, Signatures, [fail])), NoFamilies),
-
-    % A question is only considered "useful" for pruning if it is NOT ambiguous
-    % for ANY of the families being considered.
-    % FIX: Check for [fail,true], not [[fail],[true]].
-    \+ member([fail,true], Signatures).
-
+    % FIX: If signature contains true, it goes to YesFamilies.
+    findall(F, (nth1(I, Families, F), nth1(I, Signatures, Sig), member(true, Sig)), YesFamilies),
+    % FIX: If signature contains fail, it goes to NoFamilies.
+    findall(F, (nth1(I, Families, F), nth1(I, Signatures, Sig), member(fail, Sig)), NoFamilies).
 
 % This helper calculates the full set of answers a family can give for a single question.
 get_single_question_signature(q(Pos, Q), NumQs, Family, SignatureSet) :-
@@ -615,7 +609,7 @@ test('partition: correctly splits [True, Random] families') :-
     Question        = q(1, true),
     partition_families(In_Families, NumQs, Question, YesFamilies, NoFamilies),
     assertion(YesFamilies = [F_True, F_Rand]),
-    assertion(NoFamilies = []).
+    assertion(NoFamilies = [F_Rand]). % Random can also say 'fail' (No)
 
 test('partition: correctly splits [False, Random] families') :-
     build_uniform_family(1, falsely, F_False),
@@ -625,7 +619,7 @@ test('partition: correctly splits [False, Random] families') :-
     Question        = q(1, true),
     partition_families(In_Families, NumQs, Question, YesFamilies, NoFamilies),
     assertion(YesFamilies = [F_Rand]),
-    assertion(NoFamilies = [F_False]).
+    assertion(NoFamilies = [F_False, F_Rand]). % Random can also say 'fail' (No)
 
 test('partition: correctly splits [True, False, Random] families') :-
     build_uniform_family(1, truly, F_True),
@@ -636,7 +630,9 @@ test('partition: correctly splits [True, False, Random] families') :-
     Question        = q(1, true),
     partition_families(In_Families, NumQs, Question, YesFamilies, NoFamilies),
     sort(YesFamilies, [F_Rand, F_True]),
-    assertion(NoFamilies = [F_False]).
+    sort(NoFamilies, SortedNo),
+    sort([F_False, F_Rand], ExpectedNo),
+    assertion(SortedNo = ExpectedNo).
 
 % --- Integration Tests for `find_pruning_tree/6` ---
 test('pruning_tree: SUCCEEDS for [True, False] with 1 question') :-
