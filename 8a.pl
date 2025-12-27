@@ -205,15 +205,146 @@ generate_canonical_combination_family(GodTypes, CanonicalFamily) :-
     build_family_template(Positions, CanonicalGods, CanonicalFamily).
 
 % This is the main logic, now using the bounded tree generator.
-% --- The NEW, Efficient Pruning Algorithm ---
+% --- The NEW, Efficient Pruning Algorithm with Memoization ---
 
-% This is the new main predicate. It replaces your old 'generate-and-test' version.
-% Its job is to get the list of families and then call the real, recursive solver.
-% --- The Wrapper Predicate ---
-% --- The Wrapper Predicate ---
-% It now passes NumQs in two roles: as the Total, and as the initial Depth.
-% This is the wrapper predicate that you call from your tests.
+:- dynamic distinct_q/3. % distinct_q(Question, Signature, Complexity)
+:- dynamic seen_signature/1.
 
+init_distinct_generator :-
+    retractall(distinct_q(_, _, _)),
+    retractall(seen_signature(_)).
+
+% Generates the universe of distinct questions up to MaxComplexity
+generate_universe(NumPos, MaxComplexity, CanonicalFamilies, NumQs) :-
+    init_distinct_generator,
+    
+    % Complexity 0 (Base Cases)
+    generate_base_cases(NumPos, BaseQuestions),
+    process_candidates(BaseQuestions, 0, NumQs, CanonicalFamilies),
+    
+    % Iterative Step
+    between(1, MaxComplexity, C),
+    generate_candidates_at_complexity(C, NumPos, Candidates),
+    process_candidates(Candidates, C, NumQs, CanonicalFamilies),
+    fail. % Force loop through all complexities
+generate_universe(_, _, _, _).
+
+% Generates base case questions (Complexity 0)
+generate_base_cases(NumPos, Questions) :-
+    findall(true, true, L1),
+    findall(fail, true, L2),
+    findall(at_position_question(Pos, God),
+            (is_position(NumPos, Pos), is_god(God)),
+            L3),
+    append([L1, L2, L3], Questions).
+
+% Generates candidate questions at a specific complexity C > 0
+generate_candidates_at_complexity(C, NumPos, Candidates) :-
+    findall(Q, candidate_at_complexity(C, NumPos, Q), Candidates).
+
+candidate_at_complexity(C, NumPos, query_position_question(Pos, SubQ)) :-
+    SubC is C - 1,
+    distinct_q(SubQ, _, SubC),
+    is_position(NumPos, Pos).
+
+candidate_at_complexity(C, _, (Q1, Q2)) :-
+    % (Q1, Q2) complexity is max(C1, C2) + 1 = C => max(C1, C2) = C - 1
+    TargetSubC is C - 1,
+    % One question must be at TargetSubC, the other <= TargetSubC.
+    distinct_q(Q1, _, C1),
+    distinct_q(Q2, _, C2),
+    max_member(TargetSubC, [C1, C2]).
+
+candidate_at_complexity(C, _, (Q1 ; Q2)) :-
+    TargetSubC is C - 1,
+    distinct_q(Q1, _, C1),
+    distinct_q(Q2, _, C2),
+    max_member(TargetSubC, [C1, C2]).
+
+% Processes a list of candidate questions: computes signatures and stores new ones.
+process_candidates([], _, _, _).
+process_candidates([Q|Rest], C, NumQs, Families) :-
+    % For base cases, the Q is the full question logic (e.g. true, at_pos).
+    % But for query_position(Pos, SubQ), the Q *is* the question.
+    % Wait, distinct_q stores the INNER question structure?
+    % Yes. But to compute signature, we need to know "who asks whom"?
+    % No, distinct_q stores `Q` such that `q(Pos, Q)` is asked.
+    % Actually, the grammar defines `is_question(..., Q)`.
+    % And the solver asks `q(Pos, Q)`.
+    % The signature of `Q` depends on `Pos` if `Q` is `true`? No.
+    % `evaluate(true)` is true regardless of Pos.
+    % `evaluate(at_position(P,G))` is true regardless of "Current Pos".
+    % `evaluate(query_position(P, SubQ))` is true regardless of "Current Pos".
+    
+    % So `Q` has a unique signature independent of where it is asked!
+    % Wait, `evaluate` calls `at_position(P, G, WS)`. WS is global.
+    % `evaluate` calls `query_position(P, SubQ, WS)`. WS is global.
+    % So yes, the signature of Q is global.
+    % The only thing that depends on `Pos` is `q(Pos, Q)` in the tree node?
+    % NO! `q(Pos, Q)` means "Ask God at Pos the question Q".
+    % But `evaluate` is what runs.
+    % `query(GodType, Q)` calls `evaluate(Q)`.
+    % `evaluate` does NOT depend on GodType (except indirectly via random).
+    
+    % BUT, `truly` passes `evaluate` through.
+    % `falsely` inverts it.
+    % `random` ignores it.
+    
+    % So the signature of `Q` (from `evaluate` perspective) is what matters?
+    % Yes.
+    
+    % Let's verify `get_question_signature`.
+    % It calls `get_family_response`.
+    % Which calls `get_single_question_signature`.
+    % Which calls `query_position(Pos, Q, ..., World)`.
+    % WAIT. `query_position` uses `Pos`.
+    % The solver iterates `q(Pos, Q)`.
+    % So `distinct_question` needs to return `q(Pos, Q)`.
+    % But my generator builds `Q`.
+    
+    % User wanted `(Q1, Q2)` optimization.
+    % `Q1` and `Q2` are `Q`s.
+    % `distinct_q` should store `Q`.
+    % `distinct_question` should bind `q(Pos, Q)`.
+    % But `distinct_question` takes `CanonicalFamilies` to compute signature of `q(Pos, Q)`.
+    
+    % If I store `distinct_q(Q, Sig, C)`, what is Sig?
+    % Sig should be `evaluate(Q)` across worlds?
+    % Yes!
+    % If `distinct_q` stores `evaluate(Q)` results, then:
+    % `(Q1, Q2)` signature is `Sig1 & Sig2`.
+    % `(Q1; Q2)` signature is `Sig1 | Sig2`.
+    % `query_position(P, SubQ)` signature depends on `Sig(SubQ)` and World structure.
+    
+    % So `process_candidates` computes signature of `Q` via `evaluate`.
+    get_evaluate_signature(Q, NumQs, Families, Sig),
+    
+    (   seen_signature(Sig)
+    ->  true
+    ;   assertz(seen_signature(Sig)),
+        assertz(distinct_q(Q, Sig, C))
+        % writef('Found new Q: %w (C=%w)\n', [Q, C])
+    ),
+    process_candidates(Rest, C, NumQs, Families).
+
+% Computes the signature of `evaluate(Q)` across all worlds in Families.
+% Sig is a list of [true, fail] (one per world).
+get_evaluate_signature(Q, NumQs, Families, Sig) :-
+    % Flatten families into a list of worlds
+    findall(W, (member(F, Families), generate_worlds_from_templates(F, NumQs, W)), Worlds),
+    maplist(evaluate_on_world(Q), Worlds, Sig).
+
+evaluate_on_world(Q, World, Result) :-
+    ( evaluate(Q, [], World) -> Result = true ; Result = fail ).
+
+% distinct_question now returns q(Pos, Q) using the precomputed universe.
+% Note: We iterate Pos here, but Q comes from distinct_q.
+distinct_question(MaxComplexity, NumPos, _NumQs, _CanonicalFamilies, q(Pos, Q)) :-
+    is_position(NumPos, Pos),
+    distinct_q(Q, _, C),
+    C =< MaxComplexity.
+
+% ... (rest of the file) ...
 
 % --- Self-Contained nub/2 to replace the broken library version ---
 my_nub([], []).
@@ -225,41 +356,53 @@ my_nub([H | T], T2) :-
     my_nub(T, T2).
 
 is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, GeneratorGoal) :-
+
     % 1. Generate all family permutations (this may contain duplicates).
+
     findall(F, call(GeneratorGoal, NumPos, GodTypes, F), FamiliesWithDuplicates),
 
-     % 2. FIX: Remove the duplicates to get the true, unique set of families.
+    % 2. Remove duplicates.
+
     my_nub(FamiliesWithDuplicates, UniqueFamilies),
+
     
-    % --- Optional: Add this debug line to confirm the fix ---
-    % write('DEBUG: Unique families to distinguish (count='), length(UniqueFamilies, L), writeln(L),
-    
-    % 3. Call the recursive pruning solver with the clean, unique list.
-    find_pruning_tree(NumQs, NumQs, QComplexity, NumPos, UniqueFamilies, Tree).
+
+    % 3. Generate the Universe of Distinct Questions.
+
+    writef('Generating universe of questions (MaxComplexity=%w)...\n', [QComplexity]),
+
+    generate_universe(NumPos, QComplexity, UniqueFamilies, NumQs),
+
+    predicate_property(distinct_q(_,_,_), number_of_clauses(N)),
+
+    writef('Universe generated. Distinct questions found: %w\n', [N]),
+
+
+
+    % 4. Call the recursive pruning solver.
+
+    find_pruning_tree(NumQs, NumQs, QComplexity, NumPos, UniqueFamilies, UniqueFamilies, Tree).
 
 % --- The Recursive Solver (Corrected Signature) ---
-% Signature: find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, Tree)
+% Signature: find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, CanonicalFamilies, CurrentFamilies, Tree)
 
 % --- Base Cases (use CurrentDepth) ---
-find_pruning_tree(_, _, _, _, [], leaf).
-find_pruning_tree(_, _, _, _, [_Family], leaf).
-find_pruning_tree(_, 0, _, _, Families, leaf) :- % Base case for depth
+find_pruning_tree(_, _, _, _, _, [], leaf).
+find_pruning_tree(_, _, _, _, _, [_Family], leaf).
+find_pruning_tree(_, 0, _, _, _, Families, leaf) :- % Base case for depth
     (length(Families, 1) -> true ; !, fail). % Ran out of depth
 
 % --- Recursive Pruning Step (Corrected) ---
-% --- The Recursive Solver (with DEBUG statements) ---
-% --- The FINAL Recursive Pruning Step (with Debugging) ---
-find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, Families, tree(q(Pos, Q), YesTree, NoTree)) :-
+find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Families, tree(q(Pos, Q), YesTree, NoTree)) :-
     CurrentDepth > 0,
     NextDepth is CurrentDepth - 1,
 
-    % --- Iterative Deepening for Question Complexity ---
-    between(0, MaxQComplexity, C),
-    is_position(NumPos, Pos),
-    is_question(NumPos, C, Q),
+    % --- Generate Distinct Questions ---
+    % Now we just pull from our precomputed universe.
+    distinct_question(MaxQComplexity, NumPos, TotalNumQs, CanonicalFamilies, q(Pos, Q)),
 
     % --- DEBUG: Print what we're trying ---
-    length(Families, FamilyCount),
+    % length(Families, FamilyCount),
     % writeln(try(depth: CurrentDepth, q: (Pos,Q), families_in: FamilyCount)),
 
     partition_families(Families, TotalNumQs, q(Pos, Q), YesFamilies, NoFamilies),
@@ -270,8 +413,9 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, Families, tr
     % writeln(partition(yes_count: YesSize, no_count: NoSize)),
 
     % --- Pruning Check 1: Useless Split (Corrected) ---
-    % Succeeds only if the split is useful. Allows backtracking on failure.
-    \+ ( length(Families, YesSize) ; length(Families, NoSize) ),
+    % Succeeds only if the split is useful (neither side is empty).
+    dif(YesFamilies, []),
+    dif(NoFamilies, []),
 
     % --- Pruning Check 2: Sub-Problem Too Large (Corrected) ---
     % Succeeds only if the sub-problems are not too large. Allows backtracking on failure.
@@ -288,8 +432,8 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, Families, tr
     % writeln(commit(q: (Pos,Q))),
 
     % --- Recurse ---
-    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, YesFamilies, YesTree),
-    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, NoFamilies, NoTree).
+    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, YesFamilies, YesTree),
+    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, NoFamilies, NoTree).
 
 % --- Helpers required by the new algorithm ---
 
@@ -347,6 +491,68 @@ solve_3gods_tf(Tree) :- is_distinguishing_tree_bounded(
        Tree,                       % The variable to hold the solution
        generate_permutation_families % The name of the generator predicate to use
    ).
+% --- Visualization ---
+
+draw_tree(Tree) :-
+    draw_tree(Tree, human).
+
+draw_tree(Tree, Mode) :-
+    writeln(''),
+    draw_tree_rec(Tree, "", Mode).
+
+draw_tree_rec(leaf, _Prefix, _Mode) :-
+    writeln('  -> SOLVED').
+
+draw_tree_rec(tree(q(Pos, Q), YesTree, NoTree), Prefix, Mode) :-
+    (   Mode == raw
+    ->  format(string(QStr), "~w", [Q])
+    ;   render_question_short(Q, QStr)
+    ),
+    format('~wAsk God ~w: "~s"?~n', [Prefix, Pos, QStr]),
+    
+    string_concat(Prefix, "        ", NextPrefix),
+    
+    % Yes Branch
+    format('~w/ (yes)~n', [Prefix]),
+    draw_tree_rec(YesTree, NextPrefix, Mode),
+    
+    % No Branch
+    format('~w\\ (no)~n', [Prefix]),
+    draw_tree_rec(NoTree, NextPrefix, Mode).
+
+% Compact question renderer for the ASCII tree
+render_question_short(at_position_question(P, G), S) :-
+    format(string(S), "Is G~w ~w", [P, G]).
+render_question_short(query_position_question(P, SubQ), S) :-
+    render_question_short(SubQ, SubS),
+    format(string(S), "If asked G~w '~s', say yes", [P, SubS]).
+render_question_short((Q1, Q2), S) :-
+    render_question_short(Q1, S1),
+    render_question_short(Q2, S2),
+    format(string(S), "(~s AND ~s)", [S1, S2]).
+render_question_short((Q1; Q2), S) :-
+    render_question_short(Q1, S1),
+    render_question_short(Q2, S2),
+    format(string(S), "(~s OR ~s)", [S1, S2]).
+render_question_short(true, "True").
+render_question_short(fail, "False").
+
+
+solve_and_print_riddle :-
+    NumPos = 3, NumQs = 3, QComplexity = 1,
+    GodTypes = [truly, falsely, random],
+    Generator = generate_permutation_families,
+    
+    writeln('Searching for solution...'),
+    
+    is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Generator),
+    
+    writeln('\n--- SOLUTION FOUND (Human Readable) ---'),
+    draw_tree(Tree, human),
+    
+    writeln('\n--- SOLUTION FOUND (Raw Prolog Object) ---'),
+    draw_tree(Tree, raw).
+
 
 % all_disjoint(ListOfSets)
 % Succeeds if every set in the list is disjoint from every other set.
@@ -634,37 +840,40 @@ test('partition: correctly splits [True, False, Random] families') :-
     sort([F_False, F_Rand], ExpectedNo),
     assertion(SortedNo = ExpectedNo).
 
-% --- Integration Tests for `find_pruning_tree/6` ---
+% --- Integration Tests for `find_pruning_tree/7` ---
 test('pruning_tree: SUCCEEDS for [True, False] with 1 question') :-
     build_uniform_family(1, truly, F_True),
     build_uniform_family(1, falsely, F_False),
+    Families = [F_True, F_False],
+    generate_universe(1, 1, Families, 1), % NumPos, MaxComp, Families, NumQs
     TotalNumQs     = 1,
     CurrentDepth   = 1,
     MaxQComp       = 1,
     NumPos         = 1,
-    Families       = [F_True, F_False],
-    find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, _Tree).
+    find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, Families, _Tree).
 
 test('pruning_tree: FAILS for [True, Random] with 1 question', [fail]) :-
     build_uniform_family(1, truly, F_True),
     build_uniform_family(1, random, F_Rand),
+    Families = [F_True, F_Rand],
+    generate_universe(1, 1, Families, 1),
     TotalNumQs     = 1,
     CurrentDepth   = 1,
     MaxQComp       = 1,
     NumPos         = 1,
-    Families       = [F_True, F_Rand],
-    find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, _Tree).
+    find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, Families, _Tree).
 
 test('pruning_tree: FAILS for [True, False, Random] with 2 questions (impossible split)', [fail]) :-
     build_uniform_family(1, truly, F_True),
     build_uniform_family(1, falsely, F_False),
     build_uniform_family(1, random, F_Rand),
+    Families = [F_True, F_False, F_Rand],
+    generate_universe(1, 2, Families, 2),
     TotalNumQs     = 2,
     CurrentDepth   = 2,
     MaxQComp       = 2,
     NumPos         = 1,
-    Families       = [F_True, F_False, F_Rand],
-    find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, _Tree).
+    find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, Families, _Tree).
 
 test('pruning_tree: SUCCEEDS for a 2-position [Truly,Falsely] vs [Falsely,Truly] world') :-
     % This is a more complex scenario with 2 positions.
@@ -674,6 +883,7 @@ test('pruning_tree: SUCCEEDS for a 2-position [Truly,Falsely] vs [Falsely,Truly]
     F1 = [pos(1, truly, _), pos(2, falsely, _)],
     F2 = [pos(1, falsely, _), pos(2, truly, _)],
     Families = [F1, F2],
+    generate_universe(2, 0, Families, 1), % MaxComp 0 is enough (simple questions)
     
     % We check if a 1-question tree with complexity 0 can find a solution.
     % (The question "true" asked at position 1 will work)
@@ -682,7 +892,8 @@ test('pruning_tree: SUCCEEDS for a 2-position [Truly,Falsely] vs [Falsely,Truly]
         1, % CurrentDepth
         0, % MaxQComplexity
         2, % NumPos
-        Families,
+        Families, % Canonical
+        Families, % Current
         _Tree).
 
 :- end_tests(pruning_logic).
@@ -706,6 +917,7 @@ test('pruning_tree: FAILS because sub-problem is too large for remaining depth',
     build_uniform_family(1, falsely, F_False),
     
     Families = [F_True, Family_Rand_True, F_False],
+    generate_universe(1, 0, Families, 1),
 
     % --- 2. The Test: Call the solver ---
     % We ask it to solve this 3-family problem with only 1 question.
@@ -716,7 +928,8 @@ test('pruning_tree: FAILS because sub-problem is too large for remaining depth',
         TotalNumQs,   % CurrentDepth = 1
         0,            % MaxQComplexity = 0 (simple questions only)
         NumPos,       % NumPos = 1
-        Families,
+        Families,     % Canonical
+        Families,     % Current
         _Tree).
 
 % --- 3. Trace of Why This Fails (as a comment) ---
@@ -809,13 +1022,148 @@ test('DEBUG TRACE for the [T,T,F] problem') :-
 
     write('UniqueFamilies:'), writeln(UniqueFamilies),
 
+    % 3b. Generate Universe
+    generate_universe(NumPos, QComplexity, UniqueFamilies, NumQs),
+
     % 4. Call the pruning solver directly with the debug statements active
     find_pruning_tree(
         NumQs,   % TotalNumQs
         NumQs,   % CurrentDepth
         QComplexity,
         NumPos,
-        UniqueFamilies,
+        UniqueFamilies, % Canonical
+        UniqueFamilies, % Current
         _Tree).
 
+% (Duplicate visualization code removed)
+
+
 :- end_tests(complex_pruning_scenario).
+
+% =========================================================================================
+% SOLUTION EXPLANATION
+% =========================================================================================
+% The solver successfully found a strategy to distinguish the 3 Gods (Truly, Falsely, Random)
+% in exactly 3 questions. Here is the translation of the Prolog solution tree:
+%
+% -----------------------------------------------------------------------------------------
+% QUESTION 1: Ask God 1: "If I asked you 'Is God 2 Random?', would you say 'yes'?"
+% -----------------------------------------------------------------------------------------
+% Logic:
+% - This is a "nested" question (Complexity 1).
+% - If God 1 is NOT Random (i.e., Truth or Liar), this structure forces a truthful answer 
+%   about the inner question ("Is God 2 Random?").
+%   - If Answer is YES: God 2 IS Random. (So God 3 is NOT Random).
+%   - If Answer is NO:  God 2 is NOT Random. (So God 2 is Truth or Liar).
+% - If God 1 IS Random: The answer is random nonsense (Yes or No).
+%
+% DECISION SPLIT:
+%
+% === BRANCH A: Answer is YES ===
+% Implications:
+% - Either God 2 is Random (and God 1 told us so reliably), OR God 1 is Random (and lied/randomly said Yes).
+% - In EITHER case, we know for a fact that **God 3 is NOT Random**.
+%   - If G1=NotRandom -> G2=Random -> G3=NotRandom.
+%   - If G1=Random -> G3=NotRandom.
+% Strategy: Since God 3 is reliable (Truth or Liar), we use him to identify everyone else.
+%
+% Q2 (Ask God 3): "Is 1 == 1?" (A trivial check to see if God 3 is Truth or Liar)
+%   - If YES: God 3 is Truth.
+%     Q3 (Ask God 3): "Is God 1 False?" -> Solves everything.
+%   - If NO: God 3 is Liar.
+%     Q3 (Ask God 3): "Is God 1 True?" (He will lie) -> Solves everything.
+%
+% === BRANCH B: Answer is NO ===
+% Implications:
+% - Either God 2 is NOT Random (and God 1 told us so reliably), OR God 1 is Random.
+% - In EITHER case, we know for a fact that **God 2 is NOT Random**.
+% Strategy: Since God 2 is reliable, we use him.
+%
+% Q2 (Ask God 2): "Is 1 == 1?"
+%   - Same logic as above, but using God 2 as the oracle.
+%
+% =========================================================================================
+
+:- begin_tests(final_challenge).
+
+test('PRINT SOLUTION for 3 Gods (T,F,R)') :-
+    solve_and_print_riddle.
+
+test('3 Gods (T,F,R) is IMPOSSIBLE with complexity 0 questions (simple direct questions)', [fail]) :-
+    % 1. Define the problem parameters
+    NumPos       = 3,
+    NumQs        = 3, 
+    QComplexity  = 0, % STRICTLY simple questions only (no "If I asked you...")
+    GodTypes     = [truly, falsely, random],
+    Generator    = generate_permutation_families,
+    
+    % 2. Call the main solver
+    % We expect this to FAIL. Without nested questions, we cannot bypass the 
+    % Truth/Liar ambiguity or reliably identify Random in 3 steps.
+    is_distinguishing_tree_bounded(
+        NumPos,
+        NumQs,
+        QComplexity,
+        GodTypes,
+        _Tree,
+        Generator
+    ).
+
+test('3 Gods (T,F,R) is SOLVABLE with complexity 1 questions (3 questions deep)') :-
+    % 1. Define the problem parameters
+    NumPos       = 3,
+    NumQs        = 3, 
+    QComplexity  = 1, % Limit to simple questions
+    GodTypes     = [truly, falsely, random],
+    Generator    = generate_permutation_families,
+    
+    % 2. Call the main solver
+    % We expect this to SUCCEED. Complexity 1 allows "If I asked you X..."
+    is_distinguishing_tree_bounded(
+        NumPos,
+        NumQs,
+        QComplexity,
+        GodTypes,
+        _Tree,
+        Generator
+    ).
+
+test('3 Gods (T,F,R) is IMPOSSIBLE with only 2 questions (tree depth 2)', [fail]) :-
+    % 1. Define the problem parameters
+    NumPos       = 3,
+    NumQs        = 2, % Not enough questions!
+    QComplexity  = 1, 
+    GodTypes     = [truly, falsely, random],
+    Generator    = generate_permutation_families,
+    
+    % 2. Call the main solver
+    is_distinguishing_tree_bounded(
+        NumPos,
+        NumQs,
+        QComplexity,
+        GodTypes,
+        _Tree,
+        Generator
+    ).
+
+test('3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep)') :-
+    % 1. Define the problem parameters
+    NumPos       = 3,
+    NumQs        = 3, 
+    QComplexity  = 2, % Allow slightly more complex questions (nested once)
+    GodTypes     = [truly, falsely, random],
+    Generator    = generate_permutation_families,
+    
+    % 2. Call the main solver
+    % We expect this to SUCCEED. Complexity 2 allows "If I asked X, would you say Y?"
+    % which is sufficient for the solution.
+    is_distinguishing_tree_bounded(
+        NumPos,
+        NumQs,
+        QComplexity,
+        GodTypes,
+        _Tree,
+        Generator
+    ).
+
+:- end_tests(final_challenge).
