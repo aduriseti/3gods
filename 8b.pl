@@ -44,35 +44,54 @@ evaluate((Q1, Q2), Path, WorldState) :-
 evaluate((Q1 ; Q2), Path, WorldState) :-
     ( evaluate(Q1, Path, WorldState) ; evaluate(Q2, Path, WorldState) ).
 
-% 3. Evaluate state-dependent questions by calling them with the WorldState
+% 3. Evaluate logical XOR
+evaluate((Q1 xor Q2), Path, WorldState) :-
+    ( evaluate(Q1, Path, WorldState), \+ evaluate(Q2, Path, WorldState) )
+    ;
+    ( \+ evaluate(Q1, Path, WorldState), evaluate(Q2, Path, WorldState) ).
+
+% 4. Evaluate state-dependent questions by calling them with the WorldState
 evaluate(at_position_question(P, G), _, WS) :-
     at_position(P, G, WS). % at_position doesn't need the path
 evaluate(query_position_question(Pos, SubQ), Path, WS) :-
-    query_position(Pos, SubQ, Path, WS).
+    % Succeeds if the god at Pos would say 'da' to SubQ
+    query_position(Pos, SubQ, Path, WS, da).
 
-% 4. Evaluate base cases (these don't depend on the WorldState)
+% 5. Evaluate base cases (these don't depend on the WorldState)
 evaluate(true, _, _) :- true.
 evaluate(fail, _, _) :- fail.
 
-% at_position(Position, GodType, WorldStateList)
-% Succeeds if the god at Position is GodType within the WorldStateList.
-% Worldstate looks something like:
-% [
-%   pos(a, truly, _),
-%   pos(b, random, true),
-%   pos(c, falsely, _)
-% ]
-at_position(Position, God, WorldState) :-
-    % Searches the list for a matching entry.
-    member(pos(Position, God, _), WorldState).
+% at_position(Position, GodType, WorldState)
+% Succeeds if the god at Position is GodType within the WorldState.
+% Worldstate is w(PosList, Language)
+at_position(Position, God, w(PosList, _)) :-
+    member(pos(Position, God, _), PosList).
 
-% a -> b ==== !a | b
-% query_position now finds the full details for a position.
-query_position(Position, Question, Path, WorldState) :-
+% get_utterance(LogicalAnswer, Language, Utterance)
+get_utterance(true, da_yes, da).
+get_utterance(fail, da_yes, ja).
+get_utterance(true, da_no, ja).
+get_utterance(fail, da_no, da).
+
+% query_position now finds the full details for a position and returns the Utterance (da/ja).
+query_position(Position, Question, Path, w(PosList, Language), Utterance) :-
     % Find the specific pos(...) term for the given Position.
-    member(pos(Position, GodType, RandomAnswer), WorldState),
-    % Call the updated query/4 predicate with all necessary info.
-    query(GodType, Question, Path, WorldState, RandomAnswer).
+    member(pos(Position, GodType, RandomAnswer), PosList),
+    % Call the updated query/4 predicate to get Logical Result
+    ( query(GodType, Question, Path, w(PosList, Language), RandomAnswer)
+    -> LogicalAns = true
+    ;  LogicalAns = fail
+    ),
+    % Map Logical Result to Utterance based on Language
+    get_utterance(LogicalAns, Language, Utterance).
+
+% Backwards compatibility for tests that might call query_position/4 expecting logical truth
+% (Though we should update tests ideally, but this helps safe-guard)
+% query_position(Position, Question, Path, WorldState) :-
+%    query_position(Position, Question, Path, WorldState, da). 
+%    % NOTE: This would mean "Did he say da?". 
+%    % But old tests expected logical result. 
+%    % Better to update tests.
 
 % --- The Grammar ---
 % Base Case 1: Trivial questions are allowed.
@@ -90,15 +109,21 @@ is_question(NumPos, MaxQDepth, query_position_question(Pos, Q)) :-
     is_position(NumPos, Pos),
     is_question(NumPos, NextQDepth, Q).
 
-% Recursive rules for AND and OR remain the same.
+% Recursive rules for AND, OR, XOR.
 is_question(NumPos, MaxQDepth, (Q1, Q2)) :-
-    MaxQDepth > 0, % Only recurse if we have budget
+    MaxQDepth > 0,
     NextQDepth is MaxQDepth - 1,
     is_question(NumPos, NextQDepth, Q1),
     is_question(NumPos, NextQDepth, Q2).
 
 is_question(NumPos, MaxQDepth, (Q1 ; Q2)) :-
-    MaxQDepth > 0, % Only recurse if we have budget
+    MaxQDepth > 0,
+    NextQDepth is MaxQDepth - 1,
+    is_question(NumPos, NextQDepth, Q1),
+    is_question(NumPos, NextQDepth, Q2).
+
+is_question(NumPos, MaxQDepth, (Q1 xor Q2)) :-
+    MaxQDepth > 0,
     NextQDepth is MaxQDepth - 1,
     is_question(NumPos, NextQDepth, Q1),
     is_question(NumPos, NextQDepth, Q2).
@@ -120,21 +145,21 @@ build_family_template([Pos|Ps], [God|Gs], [pos(Pos, God, _)|Template]) :-
 % --- World Generation from a Family Template ---
 
 % generate_worlds_from_templates(FamilyTemplate, ConcreteWorld)
-% Takes a template and generates a concrete world by filling in random answers.
+% Takes a template and generates a concrete world by filling in random answers AND picking a language.
 fill_random_answer(random, NumQuestions, RndAnsList) :-
     length(RndAnsList, NumQuestions),
     maplist(is_random_answer, RndAnsList). % Generate a list of N random answers
 fill_random_answer(God, _, _) :-
     dif(God, random). % For non-random gods, the answer is unbound.
-generate_worlds_from_templates([], _, []).
-% [
-%   pos(a, truly, _),
-%   pos(b, random, true),
-%   pos(c, falsely, _)
-% ]
-generate_worlds_from_templates([pos(P, God, _)|T], NumQs, [pos(P, God, RndAns)|W]) :-
+
+generate_worlds_from_templates(Template, NumQs, w(PosList, Lang)) :-
+    generate_pos_list(Template, NumQs, PosList),
+    member(Lang, [da_yes, da_no]).
+
+generate_pos_list([], _, []).
+generate_pos_list([pos(P, God, _)|T], NumQs, [pos(P, God, RndAns)|W]) :-
     fill_random_answer(God, NumQs, RndAns),
-    generate_worlds_from_templates(T, NumQs, W).
+    generate_pos_list(T, NumQs, W).
 
 % --- Helper Predicates ---
 
@@ -142,11 +167,13 @@ generate_worlds_from_templates([pos(P, God, _)|T], NumQs, [pos(P, God, RndAns)|W
 % Simulates the questioning process for a given tree and world.
 get_answer_path(Tree, World, Path) :- get_answer_path_recursive(Tree, World, [], Path).
 get_answer_path_recursive(leaf, _, _, []).
-get_answer_path_recursive(tree(q(Pos, Q), YesT, NoT), World, PathSoFar, [Ans|Rest]) :-
-    ( query_position(Pos, Q, PathSoFar, World) -> Ans = true ; Ans = fail ),
-    (   Ans = true
-    ->  get_answer_path_recursive(YesT, World, [true|PathSoFar], Rest)
-    ;   get_answer_path_recursive(NoT, World, [fail|PathSoFar], Rest)
+get_answer_path_recursive(tree(q(Pos, Q), DaT, JaT), World, PathSoFar, [Ans|Rest]) :-
+    query_position(Pos, Q, PathSoFar, World, Ans), % Ans will be da or ja
+    (
+        Ans = da
+    ->  get_answer_path_recursive(DaT, World, [da|PathSoFar], Rest)
+    ;
+        get_answer_path_recursive(JaT, World, [ja|PathSoFar], Rest)
     ).
 
 % get_family_signature_set(Tree, Family, SignatureSet)
@@ -256,6 +283,12 @@ candidate_at_complexity(C, _, (Q1, Q2)) :-
     max_member(TargetSubC, [C1, C2]).
 
 candidate_at_complexity(C, _, (Q1 ; Q2)) :-
+    TargetSubC is C - 1,
+    distinct_q(Q1, _, C1),
+    distinct_q(Q2, _, C2),
+    max_member(TargetSubC, [C1, C2]).
+
+candidate_at_complexity(C, _, (Q1 xor Q2)) :-
     TargetSubC is C - 1,
     distinct_q(Q1, _, C1),
     distinct_q(Q2, _, C2),
@@ -393,7 +426,7 @@ find_pruning_tree(_, 0, _, _, _, Families, leaf) :- % Base case for depth
     (length(Families, 1) -> true ; !, fail). % Ran out of depth
 
 % --- Recursive Pruning Step (Corrected) ---
-find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Families, tree(q(Pos, Q), YesTree, NoTree)) :-
+find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Families, tree(q(Pos, Q), DaTree, JaTree)) :-
     CurrentDepth > 0,
     NextDepth is CurrentDepth - 1,
 
@@ -405,22 +438,22 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
     % length(Families, FamilyCount),
     % writeln(try(depth: CurrentDepth, q: (Pos,Q), families_in: FamilyCount)),
 
-    partition_families(Families, TotalNumQs, q(Pos, Q), YesFamilies, NoFamilies),
+    partition_families(Families, TotalNumQs, q(Pos, Q), DaFamilies, JaFamilies),
 
     % --- DEBUG: Print the result of the partition ---
-    length(YesFamilies, YesSize),
-    length(NoFamilies, NoSize),
-    % writeln(partition(yes_count: YesSize, no_count: NoSize)),
+    length(DaFamilies, DaSize),
+    length(JaFamilies, JaSize),
+    % writeln(partition(da_count: DaSize, ja_count: JaSize)),
 
     % --- Pruning Check 1: Useless Split (Corrected) ---
     % Succeeds only if the split is useful (neither side is empty).
-    dif(YesFamilies, []),
-    dif(NoFamilies, []),
+    dif(DaFamilies, []),
+    dif(JaFamilies, []),
 
     % --- Pruning Check 2: Sub-Problem Too Large (Corrected) ---
     % Succeeds only if the sub-problems are not too large. Allows backtracking on failure.
     MaxSize is 2^NextDepth,
-    (   ( YesSize > MaxSize ; NoSize > MaxSize )
+    (   ( DaSize > MaxSize ; JaSize > MaxSize )
     ->  % This branch is taken if the sub-problem is too big
         % writeln(prune(reason: 'sub-problem too large')),
         fail % Just fail, allowing Prolog to backtrack to the 'between' loop
@@ -432,8 +465,8 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
     % writeln(commit(q: (Pos,Q))),
 
     % --- Recurse ---
-    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, YesFamilies, YesTree),
-    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, NoFamilies, NoTree).
+    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, DaFamilies, DaTree),
+    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, JaFamilies, JaTree).
 
 % --- Helpers required by the new algorithm ---
 
@@ -443,29 +476,30 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
 % This new partition_families is much smarter.
 % --- The Final, Corrected Partition Logic ---
 
-partition_families(Families, NumQs, QuestionNode, YesFamilies, NoFamilies) :-
+partition_families(Families, NumQs, QuestionNode, DaFamilies, JaFamilies) :-
     % For each family, get its full signature set for this ONE question.
     maplist(get_single_question_signature(QuestionNode, NumQs), Families, Signatures),
+    % writeln(debug_sigs(QuestionNode, Signatures)),
 
     % Group families based on their signature for this question.
-    % FIX: If signature contains true, it goes to YesFamilies.
-    findall(F, (nth1(I, Families, F), nth1(I, Signatures, Sig), member(true, Sig)), YesFamilies),
-    % FIX: If signature contains fail, it goes to NoFamilies.
-    findall(F, (nth1(I, Families, F), nth1(I, Signatures, Sig), member(fail, Sig)), NoFamilies).
+    % FIX: If signature contains da, it goes to DaFamilies.
+    findall(F, (nth1(I, Families, F), nth1(I, Signatures, Sig), member(da, Sig)), DaFamilies),
+    % FIX: If signature contains ja, it goes to JaFamilies.
+    findall(F, (nth1(I, Families, F), nth1(I, Signatures, Sig), member(ja, Sig)), JaFamilies).
 
 % This helper calculates the full set of answers a family can give for a single question.
 get_single_question_signature(q(Pos, Q), NumQs, Family, SignatureSet) :-
     findall(Ans,
             (   generate_worlds_from_templates(Family, NumQs, World),
-                ( query_position(Pos, Q, [], World) -> Ans=true ; Ans=fail )
+                query_position(Pos, Q, [], World, Ans) % Returns da/ja
             ),
             Answers),
     sort(Answers, SignatureSet).
 
-% Succeeds if a family can EVER produce 'Answer' (true/fail) for the given question.
+% Succeeds if a family can EVER produce 'Answer' (da/ja) for the given question.
 family_answers_question(q(Pos, Q), NumQs, Family, Answer) :-
     generate_worlds_from_templates(Family, NumQs, World),
-    ( query_position(Pos, Q, [], World) -> Ans=true ; Ans=fail ), % We are at the root, so path is []
+    query_position(Pos, Q, [], World, Ans), % Returns da/ja
     Ans == Answer,
     !. % We only need to find one such world, not all of them.
 
@@ -503,7 +537,7 @@ draw_tree(Tree, Mode) :-
 draw_tree_rec(leaf, _Prefix, _Mode) :-
     writeln('  -> SOLVED').
 
-draw_tree_rec(tree(q(Pos, Q), YesTree, NoTree), Prefix, Mode) :-
+draw_tree_rec(tree(q(Pos, Q), DaTree, JaTree), Prefix, Mode) :-
     (   Mode == raw
     ->  format(string(QStr), "~w", [Q])
     ;   render_question_short(Q, QStr)
@@ -512,20 +546,20 @@ draw_tree_rec(tree(q(Pos, Q), YesTree, NoTree), Prefix, Mode) :-
     
     string_concat(Prefix, "        ", NextPrefix),
     
-    % Yes Branch
-    format('~w/ (yes)~n', [Prefix]),
-    draw_tree_rec(YesTree, NextPrefix, Mode),
+    % Da Branch
+    format('~w/ (da)~n', [Prefix]),
+    draw_tree_rec(DaTree, NextPrefix, Mode),
     
-    % No Branch
-    format('~w\\ (no)~n', [Prefix]),
-    draw_tree_rec(NoTree, NextPrefix, Mode).
+    % Ja Branch
+    format('~w\\ (ja)~n', [Prefix]),
+    draw_tree_rec(JaTree, NextPrefix, Mode).
 
 % Compact question renderer for the ASCII tree
 render_question_short(at_position_question(P, G), S) :-
     format(string(S), "Is G~w ~w", [P, G]).
 render_question_short(query_position_question(P, SubQ), S) :-
     render_question_short(SubQ, SubS),
-    format(string(S), "If asked G~w '~s', say yes", [P, SubS]).
+    format(string(S), "If asked G~w '~s', say da", [P, SubS]).
 render_question_short((Q1, Q2), S) :-
     render_question_short(Q1, S1),
     render_question_short(Q2, S2),
@@ -534,6 +568,10 @@ render_question_short((Q1; Q2), S) :-
     render_question_short(Q1, S1),
     render_question_short(Q2, S2),
     format(string(S), "(~s OR ~s)", [S1, S2]).
+render_question_short((Q1 xor Q2), S) :-
+    render_question_short(Q1, S1),
+    render_question_short(Q2, S2),
+    format(string(S), "(~s XOR ~s)", [S1, S2]).
 render_question_short(true, "True").
 render_question_short(fail, "False").
 
@@ -601,6 +639,13 @@ render_question((Q1 ; Q2), String) :-
     indent_lines(RawSubString2, S2),
     format(string(String), "(\n~s\n  OR\n~s\n)", [S1, S2]).
 
+render_question((Q1 xor Q2), String) :-
+    render_question(Q1, RawSubString1),
+    indent_lines(RawSubString1, S1),
+    render_question(Q2, RawSubString2),
+    indent_lines(RawSubString2, S2),
+    format(string(String), "(\n~s\n  XOR\n~s\n)", [S1, S2]).
+
 % --- Modified Recursive Cases ---
 % indent_lines(RawString, IndentedString)
 % Adds a fixed indent to each line in a multi-line string.
@@ -626,18 +671,20 @@ test('fill_random_answer for "random" god creates a correct-length list') :-
     fill_random_answer(random, /*num_questions=*/3, RndAnsList),
     length(RndAnsList, 3).
 
-test('generate_worlds_from_templates for a "truly" family is deterministic') :-
-    % A 1-position, "all truly" family should only have 1 corresponding world.
+test('generate_worlds_from_templates for a "truly" family produces 2 worlds (da/ja)') :-
+    % A 1-position, "all truly" family should have 2 worlds: da_yes and da_no
     build_uniform_family(1, truly, Family),
     findall(W, generate_worlds_from_templates(Family, /*num_questions=*/3, W), Worlds),
-    length(Worlds, 1).
+    length(Worlds, 2).
 
-test('generate_worlds_from_templates for a "random" family is non-deterministic') :-
+test('generate_worlds_from_templates for a "random" family produces 2 * 2^N worlds') :-
     % A 1-position, "all random" family, with 2 questions (N=2)...
+    % 2^2 = 4 answers patterns.
+    % 2 languages.
+    % Total 8 worlds.
     build_uniform_family(/*num_positions*/1, random, Family),
-    % ...should generate 2^2 = 4 unique worlds.
     findall(W, generate_worlds_from_templates(Family, /*num_questions=*/2, W), Worlds),
-    length(Worlds, 4).
+    length(Worlds, 8).
 
 test('permutation generator creates N! families') :-
     god_types(Gods), length(Gods, 3),
@@ -662,45 +709,51 @@ test('all_disjoint/1 succeeds for a list of disjoint sets') :- all_disjoint([[a]
 test('all_disjoint/1 fails if any two sets overlap', [fail]) :- all_disjoint([[a, b], [c, d], [b, e]]).
 
 % --- Integration Test for Signature Set Generation ---
-test('get_family_signature_set for "all truly" family is correct') :-
+% Note: With 2 languages, a "truly" god saying 'true' will say 'da' in one world and 'ja' in another.
+% So the signature for a single question "true" for a Truly family is [da, ja].
+
+test('get_family_signature_set for "all truly" family is [da, ja]') :-
     Tree = tree(q(1, true), leaf, leaf),
     build_uniform_family(1, truly, Family),
-    get_family_signature_set(Tree, /*num_questions=*/1, Family, [[true]]).
+    get_family_signature_set(Tree, /*num_questions=*/1, Family, [[da], [ja]]).
 
-test('get_family_signature_set for "all falsely" family is correct') :-
+test('get_family_signature_set for "all falsely" family is [da, ja]') :-
     Tree = tree(q(1, true), leaf, leaf),
     build_uniform_family(1, falsely, Family),
-    get_family_signature_set(Tree, /*num_questions=*/1, Family, [[fail]]).
+    get_family_signature_set(Tree, /*num_questions=*/1, Family, [[da], [ja]]).
 
-test('get_family_signature_set for "all random" family is correct') :-
+% For Random family, it can say da or ja in all language contexts because it lies/tells truth arbitrarily.
+test('get_family_signature_set for "all random" family is [da, ja]') :-
     Tree = tree(q(1, true), leaf, leaf),
     build_uniform_family(1, random, Family),
-    get_family_signature_set(Tree, /*num_questions=*/1, Family, [[fail], [true]]).
+    get_family_signature_set(Tree, /*num_questions=*/1, Family, [[da], [ja]]).
 
-test('2-question tree with "all truly" family has one outcome: [true, true]') :-
+test('2-question tree with "all truly" family has one outcome: [da, da]') :-
     Tree = tree(q(1, true), tree(q(1, true), leaf, leaf), tree(q(1, true), leaf, leaf)),
     build_uniform_family(1, truly, Family),
-    get_family_signature_set(Tree, /*num_questions=*/2, Family, [[true, true]]).
+    get_family_signature_set(Tree, /*num_questions=*/2, Family, [[da, da]]).
 
-test('2-question tree with "all falsely" family has one outcome: [fail, fail]') :-
+test('2-question tree with "all falsely" family has one outcome: [ja, ja]') :-
     Tree = tree(q(1, true), tree(q(1, true), leaf, leaf), tree(q(1, true), leaf, leaf)),
     build_uniform_family(1, falsely, Family),
-    get_family_signature_set(Tree, /*num_questions=*/2, Family, [[fail, fail]]).
+    get_family_signature_set(Tree, /*num_questions=*/2, Family, [[ja, ja]]).
 
 test('2-question tree with "all random" family has all 4 possible outcomes') :-
     Tree = tree(q(1, true), tree(q(1, true), leaf, leaf), tree(q(1, true), leaf, leaf)),
     build_uniform_family(1, random, Family),
-    ExpectedSet = [[fail, fail], [fail, true], [true, fail], [true, true]],
+    ExpectedSet = [[da, da], [da, ja], [ja, da], [ja, ja]],
     get_family_signature_set(Tree, /*num_questions=*/2, Family, ExpectedSet).
-
-
 
 :- end_tests(disjoint_logic).
 
 
 :- begin_tests(distinguishing_scenarios).
 
-test('1 question CAN distinguish [truly] from [falsely]') :-
+% With da/ja, 1 simple question cannot distinguish T from F, because both can say da or ja.
+% T (da=yes) -> da.  T (da=no) -> ja.
+% F (da=yes) -> ja.  F (da=no) -> da.
+% Signatures overlap perfectly: [da, ja] vs [da, ja].
+test('1 question CAN distinguish [truly] from [falsely] with embedded question') :-
     is_distinguishing_tree_bounded(1, 1, 1, [truly, falsely], _Tree, generate_uniform_families).
 
 test('truly with 2 positions is distinguishable by default even with 0 questions]') :-
@@ -754,98 +807,95 @@ test('Exhaustive search proves [truly,falsely,random] are indistinguishable for 
 :- begin_tests(pruning_logic).
 
 % --- Tests for `family_answers_question/4` ---
-test('family_answers: "Truly" family CAN answer true') :-
-    build_uniform_family(1, truly, F_True), % Setup is now INSIDE the test
-    Question       = q(1, true),
-    NumQs          = 1,
-    ExpectedAnswer = true,
-    family_answers_question(Question, NumQs, F_True, ExpectedAnswer).
-
-test('family_answers: "Truly" family CANNOT answer false', [fail]) :-
+test('family_answers: "Truly" family CAN answer da') :-
     build_uniform_family(1, truly, F_True),
     Question       = q(1, true),
     NumQs          = 1,
-    ExpectedAnswer = fail,
+    ExpectedAnswer = da,
     family_answers_question(Question, NumQs, F_True, ExpectedAnswer).
 
-test('family_answers: "Falsely" family CAN answer false') :-
+test('family_answers: "Truly" family CAN answer ja') :-
+    build_uniform_family(1, truly, F_True),
+    Question       = q(1, true),
+    NumQs          = 1,
+    ExpectedAnswer = ja,
+    family_answers_question(Question, NumQs, F_True, ExpectedAnswer).
+
+test('family_answers: "Falsely" family CAN answer da') :-
     build_uniform_family(1, falsely, F_False),
     Question       = q(1, true),
     NumQs          = 1,
-    ExpectedAnswer = fail,
+    ExpectedAnswer = da,
     family_answers_question(Question, NumQs, F_False, ExpectedAnswer).
 
-test('family_answers: "Falsely" family CANNOT answer true', [fail]) :-
+test('family_answers: "Falsely" family CAN answer ja') :-
     build_uniform_family(1, falsely, F_False),
     Question       = q(1, true),
     NumQs          = 1,
-    ExpectedAnswer = true,
+    ExpectedAnswer = ja,
     family_answers_question(Question, NumQs, F_False, ExpectedAnswer).
 
-test('family_answers: "Random" family CAN answer true') :-
+test('family_answers: "Random" family CAN answer da') :-
     build_uniform_family(1, random, F_Rand),
     Question       = q(1, true),
     NumQs          = 1,
-    ExpectedAnswer = true,
+    ExpectedAnswer = da,
     family_answers_question(Question, NumQs, F_Rand, ExpectedAnswer).
 
-test('family_answers: "Random" family CAN answer false') :-
+test('family_answers: "Random" family CAN answer ja') :-
     build_uniform_family(1, random, F_Rand),
     Question       = q(1, true),
     NumQs          = 1,
-    ExpectedAnswer = fail,
+    ExpectedAnswer = ja,
     family_answers_question(Question, NumQs, F_Rand, ExpectedAnswer).
 
 % --- Tests for `partition_families/5` ---
-test('partition: correctly splits [True, False] families') :-
+
+test('partition: simple question does NOT split [True, False] (both answer da/ja)') :-
     build_uniform_family(1, truly, F_True),
     build_uniform_family(1, falsely, F_False),
     In_Families     = [F_True, F_False],
     NumQs           = 1,
     Question        = q(1, true),
-    partition_families(In_Families, NumQs, Question, YesFamilies, NoFamilies),
-    assertion(YesFamilies = [F_True]),
-    assertion(NoFamilies = [F_False]).
+    partition_families(In_Families, NumQs, Question, DaFamilies, JaFamilies),
+    % Both families can answer da and ja, so they appear in both lists
+    assertion(DaFamilies = [F_True, F_False]),
+    assertion(JaFamilies = [F_True, F_False]).
 
-test('partition: correctly splits [True, Random] families') :-
+test('partition: embedded question SPLITS [True, False] perfectly') :-
+    build_uniform_family(1, truly, F_True),
+    build_uniform_family(1, falsely, F_False),
+    In_Families     = [F_True, F_False],
+    NumQs           = 1,
+    % "If asked 'Am I Truly?', say da"
+    % Truly -> da. Falsely -> ja.
+    SubQ            = at_position_question(1, truly),
+    Question        = q(1, query_position_question(1, SubQ)),
+    
+    partition_families(In_Families, NumQs, Question, DaFamilies, JaFamilies),
+    assertion(DaFamilies = [F_True]),
+    assertion(JaFamilies = [F_False]).
+
+test('partition: correctly splits [True, Random] with embedded question') :-
     build_uniform_family(1, truly, F_True),
     build_uniform_family(1, random, F_Rand),
     In_Families     = [F_True, F_Rand],
     NumQs           = 1,
-    Question        = q(1, true),
-    partition_families(In_Families, NumQs, Question, YesFamilies, NoFamilies),
-    assertion(YesFamilies = [F_True, F_Rand]),
-    assertion(NoFamilies = [F_Rand]). % Random can also say 'fail' (No)
-
-test('partition: correctly splits [False, Random] families') :-
-    build_uniform_family(1, falsely, F_False),
-    build_uniform_family(1, random, F_Rand),
-    In_Families     = [F_False, F_Rand],
-    NumQs           = 1,
-    Question        = q(1, true),
-    partition_families(In_Families, NumQs, Question, YesFamilies, NoFamilies),
-    assertion(YesFamilies = [F_Rand]),
-    assertion(NoFamilies = [F_False, F_Rand]). % Random can also say 'fail' (No)
-
-test('partition: correctly splits [True, False, Random] families') :-
-    build_uniform_family(1, truly, F_True),
-    build_uniform_family(1, falsely, F_False),
-    build_uniform_family(1, random, F_Rand),
-    In_Families     = [F_True, F_False, F_Rand],
-    NumQs           = 1,
-    Question        = q(1, true),
-    partition_families(In_Families, NumQs, Question, YesFamilies, NoFamilies),
-    sort(YesFamilies, [F_Rand, F_True]),
-    sort(NoFamilies, SortedNo),
-    sort([F_False, F_Rand], ExpectedNo),
-    assertion(SortedNo = ExpectedNo).
+    SubQ            = at_position_question(1, truly),
+    Question        = q(1, query_position_question(1, SubQ)),
+    
+    partition_families(In_Families, NumQs, Question, DaFamilies, JaFamilies),
+    % Truly -> da. Random -> da/ja.
+    assertion(DaFamilies = [F_True, F_Rand]),
+    assertion(JaFamilies = [F_Rand]).
 
 % --- Integration Tests for `find_pruning_tree/7` ---
-test('pruning_tree: SUCCEEDS for [True, False] with 1 question') :-
+test('pruning_tree: SUCCEEDS for [True, False] with 1 question (embedded)') :-
     build_uniform_family(1, truly, F_True),
     build_uniform_family(1, falsely, F_False),
     Families = [F_True, F_False],
-    generate_universe(1, 1, Families, 1), % NumPos, MaxComp, Families, NumQs
+    % Complexity 1 allows embedded questions
+    generate_universe(1, 1, Families, 1), 
     TotalNumQs     = 1,
     CurrentDepth   = 1,
     MaxQComp       = 1,
@@ -999,8 +1049,6 @@ test('pruning_tree: SUCCEEDS for a [T,T,F] problem with 2 questions') :-
         Generator
     ).
 
-% --- Add this new test to your complex_pruning_scenario suite ---
-
 test('DEBUG TRACE for the [T,T,F] problem') :-
     % 1. Define the exact problem parameters
     NumPos       = 3,
@@ -1015,12 +1063,11 @@ test('DEBUG TRACE for the [T,T,F] problem') :-
     % 3. Print the initial state so we can see it
     writeln('\n--- STARTING DEBUG TRACE FOR TTF SCENARIO ---'),
     write('Families to distinguish (count='), length(Families, L), writeln(L),
-    write('Families: '), writeln(Families),
+    % write('Families: '), writeln(Families),
 
     my_nub(Families, UniqueFamilies),
-        % nub(FamiliesWithDuplicates, UniqueFamilies),
 
-    write('UniqueFamilies:'), writeln(UniqueFamilies),
+    write('UniqueFamilies:'), length(UniqueFamilies, UL), writeln(UL),
 
     % 3b. Generate Universe
     generate_universe(NumPos, QComplexity, UniqueFamilies, NumQs),
@@ -1035,54 +1082,7 @@ test('DEBUG TRACE for the [T,T,F] problem') :-
         UniqueFamilies, % Current
         _Tree).
 
-% (Duplicate visualization code removed)
-
-
 :- end_tests(complex_pruning_scenario).
-
-% =========================================================================================
-% SOLUTION EXPLANATION
-% =========================================================================================
-% The solver successfully found a strategy to distinguish the 3 Gods (Truly, Falsely, Random)
-% in exactly 3 questions. Here is the translation of the Prolog solution tree:
-%
-% -----------------------------------------------------------------------------------------
-% QUESTION 1: Ask God 1: "If I asked you 'Is God 2 Random?', would you say 'yes'?"
-% -----------------------------------------------------------------------------------------
-% Logic:
-% - This is a "nested" question (Complexity 1).
-% - If God 1 is NOT Random (i.e., Truth or Liar), this structure forces a truthful answer 
-%   about the inner question ("Is God 2 Random?").
-%   - If Answer is YES: God 2 IS Random. (So God 3 is NOT Random).
-%   - If Answer is NO:  God 2 is NOT Random. (So God 2 is Truth or Liar).
-% - If God 1 IS Random: The answer is random nonsense (Yes or No).
-%
-% DECISION SPLIT:
-%
-% === BRANCH A: Answer is YES ===
-% Implications:
-% - Either God 2 is Random (and God 1 told us so reliably), OR God 1 is Random (and lied/randomly said Yes).
-% - In EITHER case, we know for a fact that **God 3 is NOT Random**.
-%   - If G1=NotRandom -> G2=Random -> G3=NotRandom.
-%   - If G1=Random -> G3=NotRandom.
-% Strategy: Since God 3 is reliable (Truth or Liar), we use him to identify everyone else.
-%
-% Q2 (Ask God 3): "Is 1 == 1?" (A trivial check to see if God 3 is Truth or Liar)
-%   - If YES: God 3 is Truth.
-%     Q3 (Ask God 3): "Is God 1 False?" -> Solves everything.
-%   - If NO: God 3 is Liar.
-%     Q3 (Ask God 3): "Is God 1 True?" (He will lie) -> Solves everything.
-%
-% === BRANCH B: Answer is NO ===
-% Implications:
-% - Either God 2 is NOT Random (and God 1 told us so reliably), OR God 1 is Random.
-% - In EITHER case, we know for a fact that **God 2 is NOT Random**.
-% Strategy: Since God 2 is reliable, we use him.
-%
-% Q2 (Ask God 2): "Is 1 == 1?"
-%   - Same logic as above, but using God 2 as the oracle.
-%
-% =========================================================================================
 
 :- begin_tests(final_challenge).
 
