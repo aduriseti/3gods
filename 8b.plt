@@ -2,6 +2,61 @@
 :- use_module(library(plunit)).
 :- consult('8b.pl').
 
+:- begin_tests(distinct_generation).
+
+test('Generate universe for complexity 1 and count distinct signatures') :-
+    findall(F, generate_permutation_families(3, [truly, falsely, random], F), Families),
+    my_nub(Families, UniqueFamilies),
+    call_with_time_limit(10, generate_universe(3, 1, UniqueFamilies, 3)),
+    call_with_time_limit(10, predicate_property(distinct_q(_,_,_), number_of_clauses(Count))),
+    writeln(distinct_count_comp1(Count)),
+    assertion(Count =< 729).
+
+test('Generate universe for complexity 2 and count distinct signatures') :-
+    findall(F, generate_permutation_families(3, [truly, falsely, random], F), Families),
+    my_nub(Families, UniqueFamilies),
+    call_with_time_limit(10, generate_universe(3, 2, UniqueFamilies, 3)),
+    call_with_time_limit(10, predicate_property(distinct_q(_,_,_), number_of_clauses(Count))),
+    writeln(distinct_count_comp2(Count)),
+    % We found 222 distinct questions with inverse pruning.
+    % This is close to the theoretical 216.
+    assertion(Count =< 729).
+
+% test('Generate universe for complexity 3 and count distinct signatures') :-
+%     findall(F, generate_permutation_families(3, [truly, falsely, random], F), Families),
+%     my_nub(Families, UniqueFamilies),
+%     call_with_time_limit(10, generate_universe(3, 3, UniqueFamilies, 3)),
+%     call_with_time_limit(10, predicate_property(distinct_q(_,_,_), number_of_clauses(Count))),
+%     % 365
+%     writeln(distinct_count_comp3(Count)),
+%     assertion(Count =< 729).
+
+:- end_tests(distinct_generation).
+
+:- begin_tests(signature_inversion).
+
+test('invert_atom inverts true/fail correctly') :-
+    invert_atom(true, fail),
+    invert_atom(fail, true).
+
+test('invert_answer_set inverts [true] to [fail]') :-
+    invert_answer_set([true], [fail]).
+
+test('invert_answer_set inverts [fail] to [true]') :-
+    invert_answer_set([fail], [true]).
+
+test('invert_answer_set inverts [fail, true] to [fail, true]') :-
+    invert_answer_set([fail, true], Inv),
+    sort(Inv, Sorted),
+    Sorted = [fail, true].
+
+test('invert_signature inverts a list of answer sets') :-
+    Sig = [[true], [fail], [fail, true]],
+    invert_signature(Sig, InvSig),
+    InvSig = [[fail], [true], [fail, true]].
+
+:- end_tests(signature_inversion).
+
 :- begin_tests(world_generation).
 
 test('fill_random_answer for "truly" god leaves answer unbound') :-
@@ -85,10 +140,10 @@ test('2-question tree with "all random" family has all 4 possible outcomes') :-
 :- begin_tests(distinguishing_scenarios).
 
 test('1 question CAN distinguish [truly] from [falsely]') :-
-    call_with_time_limit(20, is_distinguishing_tree_bounded(1, 1, 1, [truly, falsely], _Tree, generate_uniform_families)).
+    call_with_time_limit(10, is_distinguishing_tree_bounded(1, 1, 1, [truly, falsely], _Tree, generate_uniform_families)).
 
 test('truly with 2 positions is distinguishable by default even with 0 questions]') :-
-    call_with_time_limit(20, is_distinguishing_tree_bounded(
+    call_with_time_limit(10, is_distinguishing_tree_bounded(
            2, % Num Positions
            0, % Tree Depth (Num Questions)
            0, % Max Question Complexity
@@ -100,7 +155,7 @@ test('truly with 2 positions is distinguishable by default even with 0 questions
 test('Exhaustive search proves [truly] vs [random] is indistinguishable for 1 Q^1 question') :-
     % We are asserting that the following goal MUST FAIL.
     % The '\+' operator succeeds if its argument fails completely.
-    call_with_time_limit(20, \+ is_distinguishing_tree_bounded(
+    call_with_time_limit(10, \+ is_distinguishing_tree_bounded(
            1, % Num Positions
            1, % Tree Depth (Num Questions)
            1, % Max Question Complexity
@@ -109,23 +164,23 @@ test('Exhaustive search proves [truly] vs [random] is indistinguishable for 1 Q^
            generate_uniform_families
        )).
 
-% % W/ addition of xor rule - this test now too expensive to run.
-% test('Exhaustive search proves [truly] vs [random] is indistinguishable for 3 Q^3 question') :-
-%     % We are asserting that the following goal MUST FAIL.
-%     % The '\+' operator succeeds if its argument fails completely.
-%     call_with_time_limit(20, \+ is_distinguishing_tree_bounded(
-%            1, % Num Positions
-%            3, % Tree Depth (Num Questions)
-%            3, % Max Question Complexity
-%            [truly, random],
-%            _Tree,
-%            generate_uniform_families
-%        )).
+% W/ addition of xor rule - this test now too expensive to run.
+test('Exhaustive search proves [truly] vs [random] is indistinguishable for 3 Q^3 question') :-
+    % We are asserting that the following goal MUST FAIL.
+    % The '\+' operator succeeds if its argument fails completely.
+    call_with_time_limit(10, \+ is_distinguishing_tree_bounded(
+           1, % Num Positions
+           3, % Tree Depth (Num Questions)
+           3, % Max Question Complexity
+           [truly, random],
+           _Tree,
+           generate_uniform_families
+       )).
 
 test('Exhaustive search proves [truly,falsely,random] are indistinguishable for 1 Q^1 question') :-
     % We are asserting that the following goal MUST FAIL.
     % The '\+' operator succeeds if its argument fails completely.
-    call_with_time_limit(20, \+ is_distinguishing_tree_bounded(
+    call_with_time_limit(10, \+ is_distinguishing_tree_bounded(
            3, % Num Positions
            1, % Tree Depth (Num Questions)
            1, % Max Question Complexity (e.g., nesting one level deep)
@@ -472,7 +527,7 @@ test('DEBUG TRACE for the [T,T,F] problem') :-
 :- begin_tests(final_challenge).
 
 test('PRINT SOLUTION for 3 Gods (T,F,R)') :-
-    call_with_time_limit(20, solve_and_print_riddle).
+    call_with_time_limit(10, solve_and_print_riddle).
 
 test('3 Gods (T,F,R) is IMPOSSIBLE with complexity 0 questions (simple direct questions)', [fail]) :-
     % 1. Define the problem parameters
@@ -485,7 +540,7 @@ test('3 Gods (T,F,R) is IMPOSSIBLE with complexity 0 questions (simple direct qu
     % 2. Call the main solver
     % We expect this to FAIL. Without nested questions, we cannot bypass the 
     % Truth/Liar ambiguity or reliably identify Random in 3 steps.
-    call_with_time_limit(20, is_distinguishing_tree_bounded(
+    call_with_time_limit(10, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
         QComplexity,
@@ -504,7 +559,7 @@ test('3 Gods (T,F,R) is SOLVABLE with complexity 1 questions (3 questions deep)'
     
     % 2. Call the main solver
     % We expect this to SUCCEED. Complexity 1 allows "If I asked you X..."
-    call_with_time_limit(20, is_distinguishing_tree_bounded(
+    call_with_time_limit(10, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
         QComplexity,
@@ -522,7 +577,7 @@ test('3 Gods (T,F,R) is IMPOSSIBLE with only 2 questions (tree depth 2)', [fail]
     Generator    = generate_permutation_families,
     
     % 2. Call the main solver
-    call_with_time_limit(20, is_distinguishing_tree_bounded(
+    call_with_time_limit(10, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
         QComplexity,
@@ -540,7 +595,7 @@ test('3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep)'
     Generator    = generate_permutation_families,
     
     % 2. Call the main solver with a time limit
-    call_with_time_limit(20, is_distinguishing_tree_bounded(
+    call_with_time_limit(10, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
         QComplexity,
@@ -548,5 +603,23 @@ test('3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep)'
         _Tree,
         Generator
     )).
+
+% test('3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep)') :-
+%     % 1. Define the problem parameters
+%     NumPos       = 3,
+%     NumQs        = 3, 
+%     QComplexity  = 3, % Allow slightly more complex questions (nested once)
+%     GodTypes     = [truly, falsely, random],
+%     Generator    = generate_permutation_families,
+    
+%     % 2. Call the main solver with a time limit
+%     call_with_time_limit(10, is_distinguishing_tree_bounded(
+%         NumPos,
+%         NumQs,
+%         QComplexity,
+%         GodTypes,
+%         _Tree,
+%         Generator
+%     )).
 
 :- end_tests(final_challenge).

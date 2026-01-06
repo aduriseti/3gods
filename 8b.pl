@@ -297,62 +297,12 @@ candidate_at_complexity(C, _, (Q1 xor Q2)) :-
 % Processes a list of candidate questions: computes signatures and stores new ones.
 process_candidates([], _, _, _).
 process_candidates([Q|Rest], C, NumQs, Families) :-
-    % For base cases, the Q is the full question logic (e.g. true, at_pos).
-    % But for query_position(Pos, SubQ), the Q *is* the question.
-    % Wait, distinct_q stores the INNER question structure?
-    % Yes. But to compute signature, we need to know "who asks whom"?
-    % No, distinct_q stores `Q` such that `q(Pos, Q)` is asked.
-    % Actually, the grammar defines `is_question(..., Q)`.
-    % And the solver asks `q(Pos, Q)`.
-    % The signature of `Q` depends on `Pos` if `Q` is `true`? No.
-    % `evaluate(true)` is true regardless of Pos.
-    % `evaluate(at_position(P,G))` is true regardless of "Current Pos".
-    % `evaluate(query_position(P, SubQ))` is true regardless of "Current Pos".
-    
-    % So `Q` has a unique signature independent of where it is asked!
-    % Wait, `evaluate` calls `at_position(P, G, WS)`. WS is global.
-    % `evaluate` calls `query_position(P, SubQ, WS)`. WS is global.
-    % So yes, the signature of Q is global.
-    % The only thing that depends on `Pos` is `q(Pos, Q)` in the tree node?
-    % NO! `q(Pos, Q)` means "Ask God at Pos the question Q".
-    % But `evaluate` is what runs.
-    % `query(GodType, Q)` calls `evaluate(Q)`.
-    % `evaluate` does NOT depend on GodType (except indirectly via random).
-    
-    % BUT, `truly` passes `evaluate` through.
-    % `falsely` inverts it.
-    % `random` ignores it.
-    
-    % So the signature of `Q` (from `evaluate` perspective) is what matters?
-    % Yes.
-    
-    % Let's verify `get_question_signature`.
-    % It calls `get_family_response`.
-    % Which calls `get_single_question_signature`.
-    % Which calls `query_position(Pos, Q, ..., World)`.
-    % WAIT. `query_position` uses `Pos`.
-    % The solver iterates `q(Pos, Q)`.
-    % So `distinct_question` needs to return `q(Pos, Q)`.
-    % But my generator builds `Q`.
-    
-    % User wanted `(Q1, Q2)` optimization.
-    % `Q1` and `Q2` are `Q`s.
-    % `distinct_q` should store `Q`.
-    % `distinct_question` should bind `q(Pos, Q)`.
-    % But `distinct_question` takes `CanonicalFamilies` to compute signature of `q(Pos, Q)`.
-    
-    % If I store `distinct_q(Q, Sig, C)`, what is Sig?
-    % Sig should be `evaluate(Q)` across worlds?
-    % Yes!
-    % If `distinct_q` stores `evaluate(Q)` results, then:
-    % `(Q1, Q2)` signature is `Sig1 & Sig2`.
-    % `(Q1; Q2)` signature is `Sig1 | Sig2`.
-    % `query_position(P, SubQ)` signature depends on `Sig(SubQ)` and World structure.
-    
-    % So `process_candidates` computes signature of `Q` via `evaluate`.
+    % ... (comments about signature logic) ...
     get_evaluate_signature(Q, NumQs, Families, Sig),
     
-    (   seen_signature(Sig)
+    invert_signature(Sig, InvSig),
+
+    (   (seen_signature(Sig) ; seen_signature(InvSig))
     ->  true
     ;   assertz(seen_signature(Sig)),
         assertz(distinct_q(Q, Sig, C))
@@ -360,15 +310,36 @@ process_candidates([Q|Rest], C, NumQs, Families) :-
     ),
     process_candidates(Rest, C, NumQs, Families).
 
-% Computes the signature of `evaluate(Q)` across all worlds in Families.
-% Sig is a list of [true, fail] (one per world).
-get_evaluate_signature(Q, NumQs, Families, Sig) :-
-    % Flatten families into a list of worlds
-    findall(W, (member(F, Families), generate_worlds_from_templates(F, NumQs, W)), Worlds),
-    maplist(evaluate_on_world(Q), Worlds, Sig).
+% Inverts a signature (List of answer sets) to check for symmetry.
+% Symmetry: Q splits families into (A, B). "not Q" splits into (B, A).
+% Since A, B partition the space, {A, B} is the same partition as {B, A}.
+invert_signature(Sig, InvSig) :-
+    maplist(invert_answer_set, Sig, InvSig).
 
-evaluate_on_world(Q, World, Result) :-
-    ( evaluate(Q, [], World) -> Result = true ; Result = fail ).
+invert_answer_set(Set, InvSet) :-
+    maplist(invert_atom, Set, InvList),
+    sort(InvList, InvSet).
+
+invert_atom(true, fail).
+invert_atom(fail, true).
+
+% Computes the signature of `evaluate(Q)` across all worlds in Families.
+% NEW: Computes FAMILY-LEVEL signature.
+% Sig is a list of [AnswerSet_F1, AnswerSet_F2, ...].
+% This collapses all Random world variations into a single {true, fail} set.
+get_evaluate_signature(Q, NumQs, Families, Sig) :-
+    maplist(get_family_eval_set(Q, NumQs), Families, Sig).
+
+% Helper to get the set of unique answers a specific family gives to Q
+get_family_eval_set(Q, NumQs, Family, AnswerSet) :-
+    findall(Ans,
+            (   generate_worlds_from_templates(Family, NumQs, World),
+                ( evaluate(Q, [], World) -> Ans=true ; Ans=fail )
+            ),
+            RawAnswers),
+    sort(RawAnswers, AnswerSet). % Removes duplicates, e.g. [true, fail]
+
+% evaluate_on_world removed as it is no longer used directly by maplist
 
 % distinct_question now returns q(Pos, Q) using the precomputed universe.
 % Note: We iterate Pos here, but Q comes from distinct_q.
