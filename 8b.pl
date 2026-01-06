@@ -151,10 +151,14 @@ fill_random_answer(random, NumQuestions, RndAnsList) :-
 fill_random_answer(God, _, _) :-
     dif(God, random). % For non-random gods, the answer is unbound.
 
+:- dynamic allowed_languages/1.
+
 generate_worlds_from_templates(Template, NumQs, w(PosList, Lang)) :-
     generate_pos_list(Template, NumQs, PosList),
-    % member(Lang, [da_yes, da_no]).
-    Lang = da_yes. % Constraint: da = True
+    (   allowed_languages(Langs)
+    ->  member(Lang, Langs)
+    ;   member(Lang, [da_yes, da_no])
+    ).
 
 generate_pos_list([], _, []).
 generate_pos_list([pos(P, God, _)|T], NumQs, [pos(P, God, RndAns)|W]) :-

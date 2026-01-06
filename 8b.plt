@@ -1,6 +1,7 @@
 % :- use_module(library(lists)).
 :- use_module(library(plunit)).
 :- consult('8b.pl').
+:- assert(allowed_languages([da_yes])).
 
 :- begin_tests(distinct_generation).
 
@@ -22,14 +23,14 @@ test('Generate universe for complexity 2 and count distinct signatures') :-
     % This is close to the theoretical 216.
     assertion(Count =< 729).
 
-% test('Generate universe for complexity 3 and count distinct signatures') :-
-%     findall(F, generate_permutation_families(3, [truly, falsely, random], F), Families),
-%     my_nub(Families, UniqueFamilies),
-%     call_with_time_limit(10, generate_universe(3, 3, UniqueFamilies, 3)),
-%     call_with_time_limit(10, predicate_property(distinct_q(_,_,_), number_of_clauses(Count))),
-%     % 365
-%     writeln(distinct_count_comp3(Count)),
-%     assertion(Count =< 729).
+test('Generate universe for complexity 3 and count distinct signatures') :-
+    findall(F, generate_permutation_families(3, [truly, falsely, random], F), Families),
+    my_nub(Families, UniqueFamilies),
+    call_with_time_limit(60, generate_universe(3, 3, UniqueFamilies, 3)),
+    call_with_time_limit(60, predicate_property(distinct_q(_,_,_), number_of_clauses(Count))),
+    % 365
+    writeln(distinct_count_comp3(Count)),
+    assertion(Count =< 729).
 
 :- end_tests(distinct_generation).
 
