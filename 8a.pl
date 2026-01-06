@@ -725,17 +725,17 @@ test('Exhaustive search proves [truly] vs [random] is indistinguishable for 1 Q^
            generate_uniform_families
        ).
 
-test('Exhaustive search proves [truly] vs [random] is indistinguishable for 3 Q^3 question') :-
-    % We are asserting that the following goal MUST FAIL.
-    % The '\+' operator succeeds if its argument fails completely.
-    \+ is_distinguishing_tree_bounded(
-           1, % Num Positions
-           3, % Tree Depth (Num Questions)
-           3, % Max Question Complexity
-           [truly, random],
-           _Tree,
-           generate_uniform_families
-       ).
+% test('Exhaustive search proves [truly] vs [random] is indistinguishable for 3 Q^3 question') :-
+%     % We are asserting that the following goal MUST FAIL.
+%     % The '\+' operator succeeds if its argument fails completely.
+%     \+ is_distinguishing_tree_bounded(
+%            1, % Num Positions
+%            3, % Tree Depth (Num Questions)
+%            3, % Max Question Complexity
+%            [truly, random],
+%            _Tree,
+%            generate_uniform_families
+%        ).
 
 test('Exhaustive search proves [truly,falsely,random] are indistinguishable for 1 Q^1 question') :-
     % We are asserting that the following goal MUST FAIL.

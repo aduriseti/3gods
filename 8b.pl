@@ -153,7 +153,8 @@ fill_random_answer(God, _, _) :-
 
 generate_worlds_from_templates(Template, NumQs, w(PosList, Lang)) :-
     generate_pos_list(Template, NumQs, PosList),
-    member(Lang, [da_yes, da_no]).
+    % member(Lang, [da_yes, da_no]).
+    Lang = da_yes. % Constraint: da = True
 
 generate_pos_list([], _, []).
 generate_pos_list([pos(P, God, _)|T], NumQs, [pos(P, God, RndAns)|W]) :-
