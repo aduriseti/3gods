@@ -43,35 +43,54 @@ evaluate((Q1, Q2), Path, WorldState) :-
 evaluate((Q1 ; Q2), Path, WorldState) :-
     ( evaluate(Q1, Path, WorldState) ; evaluate(Q2, Path, WorldState) ).
 
-% 3. Evaluate state-dependent questions by calling them with the WorldState
+% 3. Evaluate logical XOR
+evaluate((Q1 xor Q2), Path, WorldState) :-
+    ( evaluate(Q1, Path, WorldState), \+ evaluate(Q2, Path, WorldState) )
+    ;
+    ( \+ evaluate(Q1, Path, WorldState), evaluate(Q2, Path, WorldState) ).
+
+% 4. Evaluate state-dependent questions by calling them with the WorldState
 evaluate(at_position_question(P, G), _, WS) :-
     at_position(P, G, WS). % at_position doesn't need the path
 evaluate(query_position_question(Pos, SubQ), Path, WS) :-
-    query_position(Pos, SubQ, Path, WS).
+    % Succeeds if the god at Pos would say 'da' to SubQ
+    query_position(Pos, SubQ, Path, WS, da).
 
-% 4. Evaluate base cases (these don't depend on the WorldState)
+% 5. Evaluate base cases (these don't depend on the WorldState)
 evaluate(true, _, _) :- true.
 evaluate(fail, _, _) :- fail.
 
-% at_position(Position, GodType, WorldStateList)
-% Succeeds if the god at Position is GodType within the WorldStateList.
-% Worldstate looks something like:
-% [
-%   pos(a, truly, _),
-%   pos(b, random, true),
-%   pos(c, falsely, _)
-% ]
-at_position(Position, God, WorldState) :-
-    % Searches the list for a matching entry.
-    member(pos(Position, God, _), WorldState).
+% at_position(Position, GodType, WorldState)
+% Succeeds if the god at Position is GodType within the WorldState.
+% Worldstate is w(PosList, Language)
+at_position(Position, God, w(PosList, _)) :-
+    member(pos(Position, God, _), PosList).
 
-% a -> b ==== !a | b
-% query_position now finds the full details for a position.
-query_position(Position, Question, Path, WorldState) :-
+% get_utterance(LogicalAnswer, Language, Utterance)
+get_utterance(true, da_yes, da).
+get_utterance(fail, da_yes, ja).
+get_utterance(true, da_no, ja).
+get_utterance(fail, da_no, da).
+
+% query_position now finds the full details for a position and returns the Utterance (da/ja).
+query_position(Position, Question, Path, w(PosList, Language), Utterance) :-
     % Find the specific pos(...) term for the given Position.
-    member(pos(Position, GodType, RandomAnswer), WorldState),
-    % Call the updated query/4 predicate with all necessary info.
-    query(GodType, Question, Path, WorldState, RandomAnswer).
+    member(pos(Position, GodType, RandomAnswer), PosList),
+    % Call the updated query/4 predicate to get Logical Result
+    ( query(GodType, Question, Path, w(PosList, Language), RandomAnswer)
+    -> LogicalAns = true
+    ;  LogicalAns = fail
+    ),
+    % Map Logical Result to Utterance based on Language
+    get_utterance(LogicalAns, Language, Utterance).
+
+% Backwards compatibility for tests that might call query_position/4 expecting logical truth
+% (Though we should update tests ideally, but this helps safe-guard)
+% query_position(Position, Question, Path, WorldState) :-
+%    query_position(Position, Question, Path, WorldState, da). 
+%    % NOTE: This would mean "Did he say da?". 
+%    % But old tests expected logical result. 
+%    % Better to update tests.
 
 % --- The Grammar ---
 % Base Case 1: Trivial questions are allowed.
@@ -89,15 +108,21 @@ is_question(NumPos, MaxQDepth, query_position_question(Pos, Q)) :-
     is_position(NumPos, Pos),
     is_question(NumPos, NextQDepth, Q).
 
-% Recursive rules for AND and OR remain the same.
+% Recursive rules for AND, OR, XOR.
 is_question(NumPos, MaxQDepth, (Q1, Q2)) :-
-    MaxQDepth > 0, % Only recurse if we have budget
+    MaxQDepth > 0,
     NextQDepth is MaxQDepth - 1,
     is_question(NumPos, NextQDepth, Q1),
     is_question(NumPos, NextQDepth, Q2).
 
 is_question(NumPos, MaxQDepth, (Q1 ; Q2)) :-
-    MaxQDepth > 0, % Only recurse if we have budget
+    MaxQDepth > 0,
+    NextQDepth is MaxQDepth - 1,
+    is_question(NumPos, NextQDepth, Q1),
+    is_question(NumPos, NextQDepth, Q2).
+
+is_question(NumPos, MaxQDepth, (Q1 xor Q2)) :-
+    MaxQDepth > 0,
     NextQDepth is MaxQDepth - 1,
     is_question(NumPos, NextQDepth, Q1),
     is_question(NumPos, NextQDepth, Q2).
@@ -119,21 +144,21 @@ build_family_template([Pos|Ps], [God|Gs], [pos(Pos, God, _)|Template]) :-
 % --- World Generation from a Family Template ---
 
 % generate_worlds_from_templates(FamilyTemplate, ConcreteWorld)
-% Takes a template and generates a concrete world by filling in random answers.
+% Takes a template and generates a concrete world by filling in random answers AND picking a language.
 fill_random_answer(random, NumQuestions, RndAnsList) :-
     length(RndAnsList, NumQuestions),
     maplist(is_random_answer, RndAnsList). % Generate a list of N random answers
 fill_random_answer(God, _, _) :-
     dif(God, random). % For non-random gods, the answer is unbound.
-generate_worlds_from_templates([], _, []).
-% [
-%   pos(a, truly, _),
-%   pos(b, random, true),
-%   pos(c, falsely, _)
-% ]
-generate_worlds_from_templates([pos(P, God, _)|T], NumQs, [pos(P, God, RndAns)|W]) :-
+
+generate_worlds_from_templates(Template, NumQs, w(PosList, Lang)) :-
+    generate_pos_list(Template, NumQs, PosList),
+    member(Lang, [da_yes, da_no]).
+
+generate_pos_list([], _, []).
+generate_pos_list([pos(P, God, _)|T], NumQs, [pos(P, God, RndAns)|W]) :-
     fill_random_answer(God, NumQs, RndAns),
-    generate_worlds_from_templates(T, NumQs, W).
+    generate_pos_list(T, NumQs, W).
 
 % --- Helper Predicates ---
 
@@ -141,11 +166,13 @@ generate_worlds_from_templates([pos(P, God, _)|T], NumQs, [pos(P, God, RndAns)|W
 % Simulates the questioning process for a given tree and world.
 get_answer_path(Tree, World, Path) :- get_answer_path_recursive(Tree, World, [], Path).
 get_answer_path_recursive(leaf, _, _, []).
-get_answer_path_recursive(tree(q(Pos, Q), YesT, NoT), World, PathSoFar, [Ans|Rest]) :-
-    ( query_position(Pos, Q, PathSoFar, World) -> Ans = true ; Ans = fail ),
-    (   Ans = true
-    ->  get_answer_path_recursive(YesT, World, [true|PathSoFar], Rest)
-    ;   get_answer_path_recursive(NoT, World, [fail|PathSoFar], Rest)
+get_answer_path_recursive(tree(q(Pos, Q), DaT, JaT), World, PathSoFar, [Ans|Rest]) :-
+    query_position(Pos, Q, PathSoFar, World, Ans), % Ans will be da or ja
+    (
+        Ans = da
+    ->  get_answer_path_recursive(DaT, World, [da|PathSoFar], Rest)
+    ;
+        get_answer_path_recursive(JaT, World, [ja|PathSoFar], Rest)
     ).
 
 % get_family_signature_set(Tree, Family, SignatureSet)
@@ -255,6 +282,12 @@ candidate_at_complexity(C, _, (Q1, Q2)) :-
     max_member(TargetSubC, [C1, C2]).
 
 candidate_at_complexity(C, _, (Q1 ; Q2)) :-
+    TargetSubC is C - 1,
+    distinct_q(Q1, _, C1),
+    distinct_q(Q2, _, C2),
+    max_member(TargetSubC, [C1, C2]).
+
+candidate_at_complexity(C, _, (Q1 xor Q2)) :-
     TargetSubC is C - 1,
     distinct_q(Q1, _, C1),
     distinct_q(Q2, _, C2),
@@ -392,7 +425,7 @@ find_pruning_tree(_, 0, _, _, _, Families, leaf) :- % Base case for depth
     (length(Families, 1) -> true ; !, fail). % Ran out of depth
 
 % --- Recursive Pruning Step (Corrected) ---
-find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Families, tree(q(Pos, Q), YesTree, NoTree)) :-
+find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Families, tree(q(Pos, Q), DaTree, JaTree)) :-
     CurrentDepth > 0,
     NextDepth is CurrentDepth - 1,
 
@@ -404,22 +437,22 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
     % length(Families, FamilyCount),
     % writeln(try(depth: CurrentDepth, q: (Pos,Q), families_in: FamilyCount)),
 
-    partition_families(Families, TotalNumQs, q(Pos, Q), YesFamilies, NoFamilies),
+    partition_families(Families, TotalNumQs, q(Pos, Q), DaFamilies, JaFamilies),
 
     % --- DEBUG: Print the result of the partition ---
-    length(YesFamilies, YesSize),
-    length(NoFamilies, NoSize),
-    % writeln(partition(yes_count: YesSize, no_count: NoSize)),
+    length(DaFamilies, DaSize),
+    length(JaFamilies, JaSize),
+    % writeln(partition(da_count: DaSize, ja_count: JaSize)),
 
     % --- Pruning Check 1: Useless Split (Corrected) ---
     % Succeeds only if the split is useful (neither side is empty).
-    dif(YesFamilies, []),
-    dif(NoFamilies, []),
+    dif(DaFamilies, []),
+    dif(JaFamilies, []),
 
     % --- Pruning Check 2: Sub-Problem Too Large (Corrected) ---
     % Succeeds only if the sub-problems are not too large. Allows backtracking on failure.
     MaxSize is 2^NextDepth,
-    (   ( YesSize > MaxSize ; NoSize > MaxSize )
+    (   ( DaSize > MaxSize ; JaSize > MaxSize )
     ->  % This branch is taken if the sub-problem is too big
         % writeln(prune(reason: 'sub-problem too large')),
         fail % Just fail, allowing Prolog to backtrack to the 'between' loop
@@ -431,8 +464,8 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
     % writeln(commit(q: (Pos,Q))),
 
     % --- Recurse ---
-    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, YesFamilies, YesTree),
-    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, NoFamilies, NoTree).
+    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, DaFamilies, DaTree),
+    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, JaFamilies, JaTree).
 
 % --- Helpers required by the new algorithm ---
 
@@ -442,29 +475,30 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
 % This new partition_families is much smarter.
 % --- The Final, Corrected Partition Logic ---
 
-partition_families(Families, NumQs, QuestionNode, YesFamilies, NoFamilies) :-
+partition_families(Families, NumQs, QuestionNode, DaFamilies, JaFamilies) :-
     % For each family, get its full signature set for this ONE question.
     maplist(get_single_question_signature(QuestionNode, NumQs), Families, Signatures),
+    % writeln(debug_sigs(QuestionNode, Signatures)),
 
     % Group families based on their signature for this question.
-    % FIX: If signature contains true, it goes to YesFamilies.
-    findall(F, (nth1(I, Families, F), nth1(I, Signatures, Sig), member(true, Sig)), YesFamilies),
-    % FIX: If signature contains fail, it goes to NoFamilies.
-    findall(F, (nth1(I, Families, F), nth1(I, Signatures, Sig), member(fail, Sig)), NoFamilies).
+    % FIX: If signature contains da, it goes to DaFamilies.
+    findall(F, (nth1(I, Families, F), nth1(I, Signatures, Sig), member(da, Sig)), DaFamilies),
+    % FIX: If signature contains ja, it goes to JaFamilies.
+    findall(F, (nth1(I, Families, F), nth1(I, Signatures, Sig), member(ja, Sig)), JaFamilies).
 
 % This helper calculates the full set of answers a family can give for a single question.
 get_single_question_signature(q(Pos, Q), NumQs, Family, SignatureSet) :-
     findall(Ans,
             (   generate_worlds_from_templates(Family, NumQs, World),
-                ( query_position(Pos, Q, [], World) -> Ans=true ; Ans=fail )
+                query_position(Pos, Q, [], World, Ans) % Returns da/ja
             ),
             Answers),
     sort(Answers, SignatureSet).
 
-% Succeeds if a family can EVER produce 'Answer' (true/fail) for the given question.
+% Succeeds if a family can EVER produce 'Answer' (da/ja) for the given question.
 family_answers_question(q(Pos, Q), NumQs, Family, Answer) :-
     generate_worlds_from_templates(Family, NumQs, World),
-    ( query_position(Pos, Q, [], World) -> Ans=true ; Ans=fail ), % We are at the root, so path is []
+    query_position(Pos, Q, [], World, Ans), % Returns da/ja
     Ans == Answer,
     !. % We only need to find one such world, not all of them.
 
@@ -502,7 +536,7 @@ draw_tree(Tree, Mode) :-
 draw_tree_rec(leaf, _Prefix, _Mode) :-
     writeln('  -> SOLVED').
 
-draw_tree_rec(tree(q(Pos, Q), YesTree, NoTree), Prefix, Mode) :-
+draw_tree_rec(tree(q(Pos, Q), DaTree, JaTree), Prefix, Mode) :-
     (   Mode == raw
     ->  format(string(QStr), "~w", [Q])
     ;   render_question_short(Q, QStr)
@@ -511,20 +545,20 @@ draw_tree_rec(tree(q(Pos, Q), YesTree, NoTree), Prefix, Mode) :-
     
     string_concat(Prefix, "        ", NextPrefix),
     
-    % Yes Branch
-    format('~w/ (yes)~n', [Prefix]),
-    draw_tree_rec(YesTree, NextPrefix, Mode),
+    % Da Branch
+    format('~w/ (da)~n', [Prefix]),
+    draw_tree_rec(DaTree, NextPrefix, Mode),
     
-    % No Branch
-    format('~w\\ (no)~n', [Prefix]),
-    draw_tree_rec(NoTree, NextPrefix, Mode).
+    % Ja Branch
+    format('~w\\ (ja)~n', [Prefix]),
+    draw_tree_rec(JaTree, NextPrefix, Mode).
 
 % Compact question renderer for the ASCII tree
 render_question_short(at_position_question(P, G), S) :-
     format(string(S), "Is G~w ~w", [P, G]).
 render_question_short(query_position_question(P, SubQ), S) :-
     render_question_short(SubQ, SubS),
-    format(string(S), "If asked G~w '~s', say yes", [P, SubS]).
+    format(string(S), "If asked G~w '~s', say da", [P, SubS]).
 render_question_short((Q1, Q2), S) :-
     render_question_short(Q1, S1),
     render_question_short(Q2, S2),
@@ -533,6 +567,10 @@ render_question_short((Q1; Q2), S) :-
     render_question_short(Q1, S1),
     render_question_short(Q2, S2),
     format(string(S), "(~s OR ~s)", [S1, S2]).
+render_question_short((Q1 xor Q2), S) :-
+    render_question_short(Q1, S1),
+    render_question_short(Q2, S2),
+    format(string(S), "(~s XOR ~s)", [S1, S2]).
 render_question_short(true, "True").
 render_question_short(fail, "False").
 
@@ -599,6 +637,13 @@ render_question((Q1 ; Q2), String) :-
     render_question(Q2, RawSubString2),
     indent_lines(RawSubString2, S2),
     format(string(String), "(\n~s\n  OR\n~s\n)", [S1, S2]).
+
+render_question((Q1 xor Q2), String) :-
+    render_question(Q1, RawSubString1),
+    indent_lines(RawSubString1, S1),
+    render_question(Q2, RawSubString2),
+    indent_lines(RawSubString2, S2),
+    format(string(String), "(\n~s\n  XOR\n~s\n)", [S1, S2]).
 
 % --- Modified Recursive Cases ---
 % indent_lines(RawString, IndentedString)
