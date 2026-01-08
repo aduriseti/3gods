@@ -238,12 +238,16 @@ generate_canonical_combination_family(GodTypes, CanonicalFamily) :-
 % This is the main logic, now using the bounded tree generator.
 % --- The NEW, Efficient Pruning Algorithm with Memoization ---
 
-:- dynamic distinct_q/3. % distinct_q(Question, Signature, Complexity)
-:- dynamic seen_signature/1.
+:- dynamic distinct_q/3.       % distinct_q(Action, Signature, Complexity) - For Solver
+:- dynamic distinct_logic_q/3. % distinct_logic_q(Question, Signature, Complexity) - For Recursion
+:- dynamic seen_logic_sig/1.
+:- dynamic seen_action_sig/1.
 
 init_distinct_generator :-
     retractall(distinct_q(_, _, _)),
-    retractall(seen_signature(_)).
+    retractall(distinct_logic_q(_, _, _)),
+    retractall(seen_logic_sig(_)),
+    retractall(seen_action_sig(_)).
 
 % Generates the universe of distinct questions up to MaxComplexity
 generate_universe(NumPos, MaxComplexity, CanonicalFamilies, NumQs) :-
@@ -251,12 +255,12 @@ generate_universe(NumPos, MaxComplexity, CanonicalFamilies, NumQs) :-
     
     % Complexity 0 (Base Cases)
     generate_base_cases(NumPos, BaseQuestions),
-    process_candidates(BaseQuestions, 0, NumQs, CanonicalFamilies),
+    process_candidates(BaseQuestions, 0, NumQs, NumPos, CanonicalFamilies),
     
     % Iterative Step
     between(1, MaxComplexity, C),
     generate_candidates_at_complexity(C, NumPos, Candidates),
-    process_candidates(Candidates, C, NumQs, CanonicalFamilies),
+    process_candidates(Candidates, C, NumQs, NumPos, CanonicalFamilies),
     fail. % Force loop through all complexities
 generate_universe(_, _, _, _).
 
@@ -275,49 +279,79 @@ generate_candidates_at_complexity(C, NumPos, Candidates) :-
 
 candidate_at_complexity(C, NumPos, query_position_question(Pos, SubQ)) :-
     SubC is C - 1,
-    distinct_q(SubQ, _, SubC),
+    distinct_logic_q(SubQ, _, SubC),
     is_position(NumPos, Pos).
 
 candidate_at_complexity(C, _, (Q1, Q2)) :-
-    % (Q1, Q2) complexity is max(C1, C2) + 1 = C => max(C1, C2) = C - 1
     TargetSubC is C - 1,
-    % One question must be at TargetSubC, the other <= TargetSubC.
-    distinct_q(Q1, _, C1),
-    distinct_q(Q2, _, C2),
+    distinct_logic_q(Q1, _, C1),
+    distinct_logic_q(Q2, _, C2),
     max_member(TargetSubC, [C1, C2]).
 
 candidate_at_complexity(C, _, (Q1 ; Q2)) :-
     TargetSubC is C - 1,
-    distinct_q(Q1, _, C1),
-    distinct_q(Q2, _, C2),
+    distinct_logic_q(Q1, _, C1),
+    distinct_logic_q(Q2, _, C2),
     max_member(TargetSubC, [C1, C2]).
 
 candidate_at_complexity(C, _, (Q1 xor Q2)) :-
     TargetSubC is C - 1,
-    distinct_q(Q1, _, C1),
-    distinct_q(Q2, _, C2),
+    distinct_logic_q(Q1, _, C1),
+    distinct_logic_q(Q2, _, C2),
     max_member(TargetSubC, [C1, C2]).
 
 % Processes a list of candidate questions: computes signatures and stores new ones.
-process_candidates([], _, _, _).
-process_candidates([Q|Rest], C, NumQs, Families) :-
-    % ... (comments about signature logic) ...
-    get_evaluate_signature(Q, NumQs, Families, Sig),
-    
-    invert_signature(Sig, InvSig),
+process_candidates([], _, _, _, _).
+process_candidates([Q|Rest], C, NumQs, NumPos, Families) :-
+    % 1. Compute Logic Signature (Split by Language) for Recursion
+    get_evaluate_signature(Q, NumQs, Families, LogicSig),
+    invert_logic_signature(LogicSig, InvLogicSig),
+    swap_logic_signature(LogicSig, SwapLogicSig), % Check Lang Symmetry
+    invert_logic_signature(SwapLogicSig, InvSwapLogicSig),
 
-    (   (seen_signature(Sig) ; seen_signature(InvSig))
-    ->  true
-    ;   assertz(seen_signature(Sig)),
-        assertz(distinct_q(Q, Sig, C))
-        % writef('Found new Q: %w (C=%w)\n', [Q, C])
+    (   (seen_logic_sig(LogicSig) ; seen_logic_sig(InvLogicSig) ; 
+         seen_logic_sig(SwapLogicSig) ; seen_logic_sig(InvSwapLogicSig))
+    ->  true % Skip if Logic Sig is redundant (we don't need to generate actions again if logic is same)
+    ;   assertz(seen_logic_sig(LogicSig)),
+        assertz(distinct_logic_q(Q, LogicSig, C)),
+        
+        % 2. Generate Actions q(Pos, Q) for Solver
+        generate_actions_for_q(Q, C, NumQs, NumPos, Families)
     ),
-    process_candidates(Rest, C, NumQs, Families).
+    process_candidates(Rest, C, NumQs, NumPos, Families).
 
-% Inverts a signature (List of answer sets) to check for symmetry.
-% Symmetry: Q splits families into (A, B). "not Q" splits into (B, A).
-% Since A, B partition the space, {A, B} is the same partition as {B, A}.
-invert_signature(Sig, InvSig) :-
+swap_logic_signature(Sig, SwapSig) :-
+    maplist(swap_logic_entry, Sig, SwapSig).
+
+swap_logic_entry([SetYes, SetNo], [SetNo, SetYes]).
+
+generate_actions_for_q(Q, C, NumQs, NumPos, Families) :-
+    between(1, NumPos, Pos),
+    
+    % Compute Action Signature (Utterance Sets)
+    get_action_signature(Pos, Q, NumQs, Families, ActionSig),
+    
+    % Invert Action Signature (da <-> ja symmetry)
+    invert_action_signature(ActionSig, InvActionSig),
+    
+    (   (seen_action_sig(ActionSig) ; seen_action_sig(InvActionSig))
+    ->  true
+    ;   assertz(seen_action_sig(ActionSig)),
+        assertz(distinct_q(q(Pos, Q), ActionSig, C))
+    ),
+    fail.
+generate_actions_for_q(_, _, _, _, _).
+
+% Inverts a LOGIC signature (List of [SetYes, SetNo] pairs)
+invert_logic_signature(Sig, InvSig) :-
+    maplist(invert_logic_entry, Sig, InvSig).
+
+invert_logic_entry([SetYes, SetNo], [InvYes, InvNo]) :-
+    invert_answer_set(SetYes, InvYes),
+    invert_answer_set(SetNo, InvNo).
+
+% Inverts an ACTION signature (List of AnswerSets)
+invert_action_signature(Sig, InvSig) :-
     maplist(invert_answer_set, Sig, InvSig).
 
 invert_answer_set(Set, InvSet) :-
@@ -326,30 +360,35 @@ invert_answer_set(Set, InvSet) :-
 
 invert_atom(true, fail).
 invert_atom(fail, true).
+invert_atom(da, ja).
+invert_atom(ja, da).
 
-% Computes the signature of `evaluate(Q)` across all worlds in Families.
-% NEW: Computes FAMILY-LEVEL signature.
-% Sig is a list of [AnswerSet_F1, AnswerSet_F2, ...].
-% This collapses all Random world variations into a single {true, fail} set.
+% Computes the LOGIC signature of `evaluate(Q)` across all worlds in Families.
+% Split by Language to preserve logical correlations (e.g. anti-correlated with Lang).
 get_evaluate_signature(Q, NumQs, Families, Sig) :-
-    maplist(get_family_eval_set(Q, NumQs), Families, Sig).
+    maplist(get_family_eval_set_split_lang(Q, NumQs), Families, Sig).
 
-% Helper to get the set of unique answers a specific family gives to Q
-get_family_eval_set(Q, NumQs, Family, AnswerSet) :-
+get_family_eval_set_split_lang(Q, NumQs, Family, [SetYes, SetNo]) :-
+    get_family_eval_set_fixed_lang(Q, NumQs, Family, da_yes, SetYes),
+    get_family_eval_set_fixed_lang(Q, NumQs, Family, da_no, SetNo).
+
+get_family_eval_set_fixed_lang(Q, NumQs, Family, Lang, AnswerSet) :-
     findall(Ans,
-            (   generate_worlds_from_templates(Family, NumQs, World),
+            (   generate_pos_list(Family, NumQs, PosList),
+                World = w(PosList, Lang),
                 ( evaluate(Q, [], World) -> Ans=true ; Ans=fail )
             ),
             RawAnswers),
-    sort(RawAnswers, AnswerSet). % Removes duplicates, e.g. [true, fail]
+    sort(RawAnswers, AnswerSet).
 
-% evaluate_on_world removed as it is no longer used directly by maplist
+% Computes the ACTION signature (Utterances) for q(Pos, Q).
+get_action_signature(Pos, Q, NumQs, Families, Sig) :-
+    maplist(get_single_question_signature(q(Pos, Q), NumQs), Families, Sig).
+    % Note: get_single_question_signature is already defined and uses query_position -> utterances
 
-% distinct_question now returns q(Pos, Q) using the precomputed universe.
-% Note: We iterate Pos here, but Q comes from distinct_q.
-distinct_question(MaxComplexity, NumPos, _NumQs, _CanonicalFamilies, q(Pos, Q)) :-
-    is_position(NumPos, Pos),
-    distinct_q(Q, _, C),
+% distinct_question now returns Action (q(Pos, Q)) using the precomputed universe.
+distinct_question(MaxComplexity, _NumPos, _NumQs, _CanonicalFamilies, Action) :-
+    distinct_q(Action, _, C),
     C =< MaxComplexity.
 
 % ... (rest of the file) ...
@@ -564,7 +603,16 @@ solve_and_print_riddle :-
     draw_tree(Tree, human),
     
     writeln('\n--- SOLUTION FOUND (Raw Prolog Object) ---'),
-    draw_tree(Tree, raw).
+    draw_tree(Tree, raw),
+
+    % Write to file
+    setup_call_cleanup(
+        open('solution.txt', write, Stream),
+        (
+            with_output_to(Stream, draw_tree(Tree, human))
+        ),
+        close(Stream)
+    ).
 
 
 % all_disjoint(ListOfSets)
