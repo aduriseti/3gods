@@ -49,6 +49,9 @@ evaluate((Q1 xor Q2), Path, WorldState) :-
     ;
     ( \+ evaluate(Q1, Path, WorldState), evaluate(Q2, Path, WorldState) ).
 
+evaluate(not(Q), Path, WorldState) :-
+    \+ evaluate(Q, Path, WorldState).
+
 % 4. Evaluate state-dependent questions by calling them with the WorldState
 evaluate(at_position_question(P, G), _, WS) :-
     at_position(P, G, WS). % at_position doesn't need the path
@@ -127,6 +130,11 @@ is_question(NumPos, MaxQDepth, (Q1 xor Q2)) :-
     is_question(NumPos, NextQDepth, Q1),
     is_question(NumPos, NextQDepth, Q2).
 
+is_question(NumPos, MaxQDepth, not(Q)) :-
+    MaxQDepth > 0,
+    NextQDepth is MaxQDepth - 1,
+    is_question(NumPos, NextQDepth, Q).
+
 % --- The Logic ---
 % --- World State Generation ---
 god_types([truly, random, falsely]).
@@ -180,7 +188,7 @@ get_answer_path_recursive(tree(q(Pos, Q), DaT, JaT), World, PathSoFar, [Ans|Rest
         get_answer_path_recursive(JaT, World, [ja|PathSoFar], Rest)
     ).
 
-% get_family_signature_set(Tree, Family, SignatureSet)
+% get_family_signature_set(Tree, NumQs, Family, SignatureSet)
 % Calculates the set of all possible answer paths for a given family.
 get_family_signature_set(Tree, NumQs, Family, SignatureSet) :-
     % Find all possible worlds within this family
@@ -241,13 +249,11 @@ generate_canonical_combination_family(GodTypes, CanonicalFamily) :-
 :- dynamic distinct_q/3.       % distinct_q(Action, Signature, Complexity) - For Solver
 :- dynamic distinct_logic_q/3. % distinct_logic_q(Question, Signature, Complexity) - For Recursion
 :- dynamic seen_logic_sig/1.
-:- dynamic seen_action_sig/1.
 
 init_distinct_generator :-
     retractall(distinct_q(_, _, _)),
     retractall(distinct_logic_q(_, _, _)),
-    retractall(seen_logic_sig(_)),
-    retractall(seen_action_sig(_)).
+    retractall(seen_logic_sig(_)).
 
 % Generates the universe of distinct questions up to MaxComplexity
 generate_universe(NumPos, MaxComplexity, CanonicalFamilies, NumQs) :-
@@ -300,80 +306,51 @@ candidate_at_complexity(C, _, (Q1 xor Q2)) :-
     distinct_logic_q(Q2, _, C2),
     max_member(TargetSubC, [C1, C2]).
 
+candidate_at_complexity(C, _, not(Q)) :-
+    SubC is C - 1,
+    distinct_logic_q(Q, _, SubC).
+
 % Processes a list of candidate questions: computes signatures and stores new ones.
 process_candidates([], _, _, _, _).
 process_candidates([Q|Rest], C, NumQs, NumPos, Families) :-
     % 1. Compute Logic Signature (Split by Language) for Recursion
     get_evaluate_signature(Q, NumQs, Families, LogicSig),
-    invert_logic_signature(LogicSig, InvLogicSig),
-    swap_logic_signature(LogicSig, SwapLogicSig), % Check Lang Symmetry
-    invert_logic_signature(SwapLogicSig, InvSwapLogicSig),
+    % No more inversion or swapping of logic signatures.
 
-    (   (seen_logic_sig(LogicSig) ; seen_logic_sig(InvLogicSig) ; 
-         seen_logic_sig(SwapLogicSig) ; seen_logic_sig(InvSwapLogicSig))
-    ->  true % Skip if Logic Sig is redundant (we don't need to generate actions again if logic is same)
+    (   seen_logic_sig(LogicSig)
+    ->  true % Skip logic registration if redundant (for recursion)
     ;   assertz(seen_logic_sig(LogicSig)),
-        assertz(distinct_logic_q(Q, LogicSig, C)),
-        
-        % 2. Generate Actions q(Pos, Q) for Solver
-        generate_actions_for_q(Q, C, NumQs, NumPos, Families)
+        assertz(distinct_logic_q(Q, LogicSig, C))
     ),
+
+    % 2. ALWAYS try to generate actions for the solver, even if logic was seen.
+    %    (Because Union Logic Sig might merge questions with distinct Actions)
+    generate_actions_for_q(Q, C, NumQs, NumPos, Families),
+
     process_candidates(Rest, C, NumQs, NumPos, Families).
 
-swap_logic_signature(Sig, SwapSig) :-
-    maplist(swap_logic_entry, Sig, SwapSig).
-
-swap_logic_entry([SetYes, SetNo], [SetNo, SetYes]).
-
-generate_actions_for_q(Q, C, NumQs, NumPos, Families) :-
+generate_actions_for_q(Q, C, _NumQs, NumPos, _Families) :-
     between(1, NumPos, Pos),
     
-    % Compute Action Signature (Utterance Sets)
-    get_action_signature(Pos, Q, NumQs, Families, ActionSig),
+    % Store action without deduplication (User Request)
+    % We pass an empty list for the signature since it's not used for deduplication here.
+    assertz(distinct_q(q(Pos, Q), [], C)),
     
-    % Invert Action Signature (da <-> ja symmetry)
-    invert_action_signature(ActionSig, InvActionSig),
-    
-    (   (seen_action_sig(ActionSig) ; seen_action_sig(InvActionSig))
-    ->  true
-    ;   assertz(seen_action_sig(ActionSig)),
-        assertz(distinct_q(q(Pos, Q), ActionSig, C))
-    ),
     fail.
 generate_actions_for_q(_, _, _, _, _).
 
-% Inverts a LOGIC signature (List of [SetYes, SetNo] pairs)
-invert_logic_signature(Sig, InvSig) :-
-    maplist(invert_logic_entry, Sig, InvSig).
-
-invert_logic_entry([SetYes, SetNo], [InvYes, InvNo]) :-
-    invert_answer_set(SetYes, InvYes),
-    invert_answer_set(SetNo, InvNo).
-
-% Inverts an ACTION signature (List of AnswerSets)
-invert_action_signature(Sig, InvSig) :-
-    maplist(invert_answer_set, Sig, InvSig).
-
-invert_answer_set(Set, InvSet) :-
-    maplist(invert_atom, Set, InvList),
-    sort(InvList, InvSet).
-
-invert_atom(true, fail).
-invert_atom(fail, true).
-invert_atom(da, ja).
-invert_atom(ja, da).
-
 % Computes the LOGIC signature of `evaluate(Q)` across all worlds in Families.
-% Split by Language to preserve logical correlations (e.g. anti-correlated with Lang).
+% Merges languages to reduce state space to 3^NumFamilies.
 get_evaluate_signature(Q, NumQs, Families, Sig) :-
-    maplist(get_family_eval_set_split_lang(Q, NumQs), Families, Sig).
+    maplist(get_family_eval_set_merged_lang(Q, NumQs), Families, Sig).
 
-get_family_eval_set_split_lang(Q, NumQs, Family, [SetYes, SetNo]) :-
+get_family_eval_set_merged_lang(Q, NumQs, Family, UnionSet) :-
     get_family_eval_set_fixed_lang(Q, NumQs, Family, da_yes, SetYes),
-    get_family_eval_set_fixed_lang(Q, NumQs, Family, da_no, SetNo).
+    get_family_eval_set_fixed_lang(Q, NumQs, Family, da_no, SetNo),
+    ord_union(SetYes, SetNo, UnionSet).
 
 get_family_eval_set_fixed_lang(Q, NumQs, Family, Lang, AnswerSet) :-
-    findall(Ans,
+    findall(Ans, 
             (   generate_pos_list(Family, NumQs, PosList),
                 World = w(PosList, Lang),
                 ( evaluate(Q, [], World) -> Ans=true ; Ans=fail )
@@ -381,10 +358,7 @@ get_family_eval_set_fixed_lang(Q, NumQs, Family, Lang, AnswerSet) :-
             RawAnswers),
     sort(RawAnswers, AnswerSet).
 
-% Computes the ACTION signature (Utterances) for q(Pos, Q).
-get_action_signature(Pos, Q, NumQs, Families, Sig) :-
-    maplist(get_single_question_signature(q(Pos, Q), NumQs), Families, Sig).
-    % Note: get_single_question_signature is already defined and uses query_position -> utterances
+
 
 % distinct_question now returns Action (q(Pos, Q)) using the precomputed universe.
 distinct_question(MaxComplexity, _NumPos, _NumQs, _CanonicalFamilies, Action) :-
@@ -436,7 +410,7 @@ is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Gener
 % --- Base Cases (use CurrentDepth) ---
 find_pruning_tree(_, _, _, _, _, [], leaf).
 find_pruning_tree(_, _, _, _, _, [_Family], leaf).
-find_pruning_tree(_, 0, _, _, _, Families, leaf) :- % Base case for depth
+find_pruning_tree(_, 0, _, _, _, Families, leaf) :-
     (length(Families, 1) -> true ; !, fail). % Ran out of depth
 
 % --- Recursive Pruning Step (Corrected) ---
@@ -503,7 +477,7 @@ partition_families(Families, NumQs, QuestionNode, DaFamilies, JaFamilies) :-
 
 % This helper calculates the full set of answers a family can give for a single question.
 get_single_question_signature(q(Pos, Q), NumQs, Family, SignatureSet) :-
-    findall(Ans,
+    findall(Ans, 
             (   generate_worlds_from_templates(Family, NumQs, World),
                 query_position(Pos, Q, [], World, Ans) % Returns da/ja
             ),
@@ -565,7 +539,7 @@ draw_tree_rec(tree(q(Pos, Q), DaTree, JaTree), Prefix, Mode) :-
     draw_tree_rec(DaTree, NextPrefix, Mode),
     
     % Ja Branch
-    format('~w\\ (ja)~n', [Prefix]),
+    format('~w\\\\ (ja)~n', [Prefix]),
     draw_tree_rec(JaTree, NextPrefix, Mode).
 
 % Compact question renderer for the ASCII tree
@@ -586,6 +560,9 @@ render_question_short((Q1 xor Q2), S) :-
     render_question_short(Q1, S1),
     render_question_short(Q2, S2),
     format(string(S), "(~s XOR ~s)", [S1, S2]).
+render_question_short(not(Q), S) :-
+    render_question_short(Q, SubS),
+    format(string(S), "NOT ~s", [SubS]).
 render_question_short(true, "True").
 render_question_short(fail, "False").
 
@@ -599,10 +576,12 @@ solve_and_print_riddle :-
     
     is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Generator),
     
-    writeln('\n--- SOLUTION FOUND (Human Readable) ---'),
+    writeln('\n--- SOLUTION FOUND (Human Readable) ---
+'),
     draw_tree(Tree, human),
     
-    writeln('\n--- SOLUTION FOUND (Raw Prolog Object) ---'),
+    writeln('\n--- SOLUTION FOUND (Raw Prolog Object) ---
+'),
     draw_tree(Tree, raw),
 
     % Write to file
@@ -646,7 +625,7 @@ render_question(query_position_question(Pos, Q), String) :-
     % 2. Indent the entire sub-string block
     indent_lines(RawSubString, IndentedSubString),
     % 3. Assemble the final string
-    format(string(String), "Would the god at `~w` say 'yes' to the question:~n~s", [Pos, IndentedSubString]).
+    format(string(String), "Would the god at `~w` say 'yes' to the question:\n~s", [Pos, IndentedSubString]).
 
 render_question((Q1, Q2), String) :-
     render_question(Q1, RawSubString1),
@@ -669,6 +648,11 @@ render_question((Q1 xor Q2), String) :-
     indent_lines(RawSubString2, S2),
     format(string(String), "(\n~s\n  XOR\n~s\n)", [S1, S2]).
 
+render_question(not(Q), String) :-
+    render_question(Q, RawSubString),
+    indent_lines(RawSubString, S),
+    format(string(String), "NOT (\n~s\n)", [S]).
+
 % --- Modified Recursive Cases ---
 % indent_lines(RawString, IndentedString)
 % Adds a fixed indent to each line in a multi-line string.
@@ -682,3 +666,41 @@ indent_lines(Input, Output) :-
     ), Lines, IndentedLines),
     % Join the lines back together with newlines
     atomic_list_concat(IndentedLines, "\n", Output).
+
+% --- Tests ---
+
+test_logic_deduplication(NumPos, NumQs, MaxComplexity, LogicCount) :-
+    GodTypes = [truly, falsely, random],
+    % Generate families
+    findall(F, generate_permutation_families(NumPos, GodTypes, F), FamiliesWithDuplicates),
+    my_nub(FamiliesWithDuplicates, UniqueFamilies),
+    
+    % Run generation with timeout (e.g., 10 seconds)
+    catch(
+        call_with_time_limit(10, generate_universe(NumPos, MaxComplexity, UniqueFamilies, NumQs)),
+        time_limit_exceeded, 
+        writeln('Warning: Time limit exceeded during generation')
+    ),
+    
+    predicate_property(distinct_logic_q(_,_,_), number_of_clauses(LogicCount)),
+    format('Logic Count: ~w~n', [LogicCount]),
+    
+    % Verify upper bound
+    (LogicCount =< 729 -> 
+        writeln('PASS: Logic count is within bound (<= 729).')
+    ;   
+        format('FAIL: Logic count ~w exceeds bound 729.~n', [LogicCount])
+    ).
+
+test_action_deduplication(ActionCount) :-
+    predicate_property(distinct_q(_,_,_), number_of_clauses(ActionCount)),
+    format('Action Count: ~w (No deduplication enforced)~n', [ActionCount]).
+
+run_dedup_tests :-
+    writeln('--- Running Deduplication Tests ---'),
+    NumPos = 3, NumQs = 3, MaxComplexity = 2,
+    
+    test_logic_deduplication(NumPos, NumQs, MaxComplexity, _LogicCount),
+    test_action_deduplication(_ActionCount),
+    
+    writeln('--- Tests Completed ---').

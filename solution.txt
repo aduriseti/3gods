@@ -6,25 +6,25 @@ Ask God 2: "If asked G2 'Is G1 random', say da"?
                 Ask God 2: "If asked G2 'Is G2 truly', say da"?
                 / (da)
   -> SOLVED
-                \ (ja)
+                \\ (ja)
   -> SOLVED
-        \ (ja)
+        \\ (ja)
                 Ask God 1: "If asked G1 'Is G1 truly', say da"?
                 / (da)
   -> SOLVED
-                \ (ja)
+                \\ (ja)
   -> SOLVED
-\ (ja)
+\\ (ja)
         Ask God 1: "If asked G1 'Is G1 truly', say da"?
         / (da)
                 Ask God 1: "If asked G1 'Is G2 falsely', say da"?
                 / (da)
   -> SOLVED
-                \ (ja)
+                \\ (ja)
   -> SOLVED
-        \ (ja)
+        \\ (ja)
                 Ask God 1: "If asked G1 'Is G2 truly', say da"?
                 / (da)
   -> SOLVED
-                \ (ja)
+                \\ (ja)
   -> SOLVED

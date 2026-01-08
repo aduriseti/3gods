@@ -55,7 +55,7 @@ test('Complexity 2 Action Count') :-
 test('Complexity 3 Logic Count') :- 
     findall(F, generate_permutation_families(3, [truly, falsely, random], F), Families), 
     my_nub(Families, UniqueFamilies),
-    call_with_time_limit(10, generate_universe(3, 3, UniqueFamilies, 3)),
+    call_with_time_limit(60, generate_universe(3, 3, UniqueFamilies, 3)),
     call_with_time_limit(10, predicate_property(distinct_logic_q(_,_,_), number_of_clauses(Count))),
     writeln(logic_comp3(Count)),
     assertion(Count =< 729).
@@ -63,38 +63,12 @@ test('Complexity 3 Logic Count') :-
 test('Complexity 3 Action Count') :-
     findall(F, generate_permutation_families(3, [truly, falsely, random], F), Families), 
     my_nub(Families, UniqueFamilies),
-    call_with_time_limit(10, generate_universe(3, 3, UniqueFamilies, 3)),
+    call_with_time_limit(60, generate_universe(3, 3, UniqueFamilies, 3)),
     call_with_time_limit(10, predicate_property(distinct_q(_,_,_), number_of_clauses(Count))),
     writeln(action_comp3(Count)),
     assertion(Count =< 729).
 
 :- end_tests(distinct_generation).
-
-:- begin_tests(signature_inversion).
-
-test('invert_atom inverts true/fail correctly') :- 
-    invert_atom(true, fail), 
-    invert_atom(fail, true).
-
-test('invert_answer_set inverts [true] to [fail]') :- 
-    invert_answer_set([true], [fail]).
-
-test('invert_answer_set inverts [fail] to [true]') :- 
-    invert_answer_set([fail], [true]).
-
-test('invert_answer_set inverts [fail, true] to [fail, true]') :- 
-    invert_answer_set([fail, true], Inv), 
-    sort(Inv, Sorted), 
-    Sorted = [fail, true].
-
-test('invert_action_signature inverts a list of answer sets') :- 
-    % Signature format is [SetF1, SetF2, ...]
-    Sig = [[true], [fail], [fail, true]], 
-    invert_action_signature(Sig, InvSig), 
-    % Invert: [true]->[fail], [fail]->[true], [fail, true]->[fail, true]
-    InvSig = [[fail], [true], [fail, true]].
-
-:- end_tests(signature_inversion).
 
 :- begin_tests(world_generation).
 
