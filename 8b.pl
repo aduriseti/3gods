@@ -2,6 +2,32 @@
 
 iamrunningthelatestversion.
 
+% --- Logging Infrastructure ---
+:- dynamic log_level/1.
+log_level(info). % Default log level
+
+set_log_level(Level) :-
+    retractall(log_level(_)),
+    asserta(log_level(Level)).
+
+% Log levels: debug < info < warning < error
+level_value(debug, 1).
+level_value(info, 2).
+level_value(warning, 3).
+level_value(error, 4).
+
+log_message(Level, Format, Args) :-
+    log_level(CurrentLevel),
+    level_value(CurrentLevel, CurrentVal),
+    level_value(Level, MsgVal),
+    (   MsgVal >= CurrentVal
+    ->  format(Format, Args)
+    ;   true
+    ).
+
+log_message(Level, Msg) :-
+    log_message(Level, '~w~n', [Msg]).
+
 % --- The World ---
 % --- Core Query Logic ---
 
@@ -91,7 +117,7 @@ query_position(Position, Question, Path, w(PosList, Language), Utterance) :-
 % Backwards compatibility for tests that might call query_position/4 expecting logical truth
 % (Though we should update tests ideally, but this helps safe-guard)
 % query_position(Position, Question, Path, WorldState) :-
-%    query_position(Position, Question, Path, WorldState, da). 
+%    query_position(Position, Question, Path, WorldState, da).
 %    % NOTE: This would mean "Did he say da?". 
 %    % But old tests expected logical result. 
 %    % Better to update tests.
@@ -247,27 +273,44 @@ generate_canonical_combination_family(GodTypes, CanonicalFamily) :-
 % This is the main logic, now using the bounded tree generator.
 % --- The NEW, Efficient Pruning Algorithm with Memoization ---
 
-:- dynamic distinct_q/3. % distinct_q(Question, Signature, Complexity)
+:- dynamic distinct_q/2. % distinct_q(Question, Signature)
 :- dynamic seen_signature/1.
 
 init_distinct_generator :-
-    retractall(distinct_q(_, _, _)),
+    retractall(distinct_q(_, _)),
     retractall(seen_signature(_)).
 
-% Generates the universe of distinct questions up to MaxComplexity
-generate_universe(NumPos, MaxComplexity, CanonicalFamilies, NumQs) :-
+% Generates the universe of distinct questions by fully exploring the space
+generate_universe(NumPos, CanonicalFamilies, NumQs) :-
     init_distinct_generator,
     
     % Complexity 0 (Base Cases)
     generate_base_cases(NumPos, BaseQuestions),
-    process_candidates(BaseQuestions, 0, NumQs, CanonicalFamilies),
     
-    % Iterative Step
-    between(1, MaxComplexity, C),
-    generate_candidates_at_complexity(C, NumPos, Candidates),
-    process_candidates(Candidates, C, NumQs, CanonicalFamilies),
-    fail. % Force loop through all complexities
-generate_universe(_, _, _, _).
+    % Start the saturation loop
+    saturate(BaseQuestions, NumPos, NumQs, CanonicalFamilies).
+
+saturate([], _, _, _) :- !. % No new questions to process
+saturate(NewQuestions, NumPos, NumQs, Families) :-
+    length(NewQuestions, BatchSize),
+    log_message(info, 'Processing batch of ~w candidate questions...~n', [BatchSize]),
+    % 1. Process the new questions: filter duplicates, assert distinct_q
+    process_batch(NewQuestions, NumQs, Families, AcceptedQuestions),
+    length(AcceptedQuestions, NumAccepted),
+    log_message(info, 'Accepted ~w new distinct questions in this batch.~n', [NumAccepted]),
+
+    predicate_property(distinct_q(_,_), number_of_clauses(DQCount)),
+    predicate_property(seen_signature(_), number_of_clauses(SigCount)),
+    log_message(info, 'State: ~w distinct questions, ~w seen signatures.~n', [DQCount, SigCount]),
+    
+    % Check if we are done
+    (   (AcceptedQuestions = [] ; DQCount >= 729)
+    ->  true
+    ;   % 2. Generate next batch of candidates using AcceptedQuestions + AllExistingQuestions
+        generate_next_candidates(AcceptedQuestions, NumPos, Candidates),
+        % 3. Recurse
+        saturate(Candidates, NumPos, NumQs, Families)
+    ).
 
 % Generates base case questions (Complexity 0)
 generate_base_cases(NumPos, Questions) :-
@@ -278,54 +321,81 @@ generate_base_cases(NumPos, Questions) :-
             L3),
     append([L1, L2, L3], Questions).
 
-% Generates candidate questions at a specific complexity C > 0
-generate_candidates_at_complexity(C, NumPos, Candidates) :-
-    findall(Q, candidate_at_complexity(C, NumPos, Q), Candidates).
+% Generates candidate questions by combining New questions with All questions
+generate_next_candidates(NewQuestions, NumPos, Candidates) :-
+    % 1. not(Q) for Q in NewQuestions
+    findall(not(Q), member(Q, NewQuestions), L_Not),
+    length(L_Not, NumNot),
+    log_message(debug, 'Generated ~w NOT questions.~n', [NumNot]),
+    
+    % 2. query_position(Pos, Q) for Q in NewQuestions
+    findall(query_position_question(Pos, Q), 
+            (member(Q, NewQuestions), is_position(NumPos, Pos)), 
+            L_Query),
+    length(L_Query, NumQuery),
+    log_message(debug, 'Generated ~w query_position questions.~n', [NumQuery]),
+    
+    % 3. Binary ops (Q1 op Q2) where at least one is in NewQuestions
+    %    This means: (New op All) + (All op New)
+    %    Since distinct_q stores all questions (including New ones after process_batch),
+    %    we can just iterate: Q1 in New, Q2 in DistinctQ.
+    
+    findall(distinct_q(Q, _), distinct_q(Q, _), AllQuestions),
+    length(AllQuestions, NumAll),
+    log_message(debug, 'Total distinct questions so far: ~w.~n', [NumAll]),
+    
+    % Refactored to use a cleaner pattern as requested
+    findall(Combined, 
+            (   member(Q1, NewQuestions), 
+                member(distinct_q(Q2, _), AllQuestions),
+                ( Combined = (Q1, Q2) ; Combined = (Q1 ; Q2) ; Combined = (Q1 xor Q2) )
+            ),
+            L_Binary),
+    length(L_Binary, NumBinary),
+    log_message(debug, 'Generated ~w binary operation questions.~n', [NumBinary]),
 
-candidate_at_complexity(C, NumPos, query_position_question(Pos, SubQ)) :-
-    SubC is C - 1,
-    distinct_q(SubQ, _, SubC),
-    is_position(NumPos, Pos).
-
-candidate_at_complexity(C, _, (Q1, Q2)) :-
-    % (Q1, Q2) complexity is max(C1, C2) + 1 = C => max(C1, C2) = C - 1
-    TargetSubC is C - 1,
-    % One question must be at TargetSubC, the other <= TargetSubC.
-    distinct_q(Q1, _, C1),
-    distinct_q(Q2, _, C2),
-    max_member(TargetSubC, [C1, C2]).
-
-candidate_at_complexity(C, _, (Q1 ; Q2)) :-
-    TargetSubC is C - 1,
-    distinct_q(Q1, _, C1),
-    distinct_q(Q2, _, C2),
-    max_member(TargetSubC, [C1, C2]).
-
-candidate_at_complexity(C, _, (Q1 xor Q2)) :-
-    TargetSubC is C - 1,
-    distinct_q(Q1, _, C1),
-    distinct_q(Q2, _, C2),
-    max_member(TargetSubC, [C1, C2]).
-
-candidate_at_complexity(C, _, not(Q)) :-
-    TargetSubC is C - 1,
-    distinct_q(Q, _, TargetSubC).
+    append([L_Not, L_Query, L_Binary], Candidates),
+    length(Candidates, TotalCandidates),
+    format('Total candidate questions generated: ~w.~n', [TotalCandidates]).
 
 % Processes a list of candidate questions: computes signatures and stores new ones.
-process_candidates([], _, _, _).
-process_candidates([Q|Rest], C, NumQs, Families) :-
-    % ... (comments about signature logic) ...
+% Returns the list of questions that were actually added (Accepted).
+process_batch(_, _, _, []) :-
+    predicate_property(distinct_q(_,_), number_of_clauses(Count)),
+    Count >= 729,
+    !,
+    writeln('Reached maximum distinct questions (729). Stopping batch processing.').
+
+process_batch([], _, _, []).
+process_batch([Q|Rest], NumQs, Families, Accepted) :-
+    % If we have already found all 729 possible questions - stop processing batch
+    predicate_property(distinct_q(_,_), number_of_clauses(DQCount)),
+    (   DQCount >= 729
+    ->  
+    format('Reached maximum distinct questions (729). Stopping batch processing.~n', []),
+        Accepted = []
+    ;   true
+    ),
+    
+    % Check if signature already seen
     get_evaluate_signature(Q, NumQs, Families, Sig),
     
-    (   (seen_signature(Sig))
-    ->  true
+    (   seen_signature(Sig)
+    ->  process_batch(Rest, NumQs, Families, Accepted)
     ;   assertz(seen_signature(Sig)),
-        assertz(distinct_q(Q, Sig, C))
-        % writef('Found new Q: %w (C=%w)\n', [Q, C])
-    ),
-    process_candidates(Rest, C, NumQs, Families).
+        assertz(distinct_q(Q, Sig)),
+        predicate_property(distinct_q(_,_), number_of_clauses(N)),
+        log_message(debug, '# of distinct questions: ~w~n', [N]),
+        Accepted = [Q | RestAccepted],
+        process_batch(Rest, NumQs, Families, RestAccepted)
+    ).
 
+% distinct_question now returns q(Pos, Q) using the precomputed universe.
+distinct_question(NumPos, q(Pos, Q)) :-
+    is_position(NumPos, Pos),
+    distinct_q(Q, _).
 
+process_candidates([], _, _, _) :- true. % Dummy for backward compat if needed or just remove it later
 
 % Computes the signature of `evaluate(Q)` across all worlds in Families.
 % NEW: Computes FAMILY-LEVEL signature.
@@ -336,23 +406,12 @@ get_evaluate_signature(Q, NumQs, Families, Sig) :-
 
 % Helper to get the set of unique answers a specific family gives to Q
 get_family_eval_set(Q, NumQs, Family, AnswerSet) :-
-    findall(Ans,
+    findall(Ans, 
             (   generate_worlds_from_templates(Family, NumQs, World),
                 ( evaluate(Q, [], World) -> Ans=true ; Ans=fail )
             ),
             RawAnswers),
     sort(RawAnswers, AnswerSet). % Removes duplicates, e.g. [true, fail]
-
-% evaluate_on_world removed as it is no longer used directly by maplist
-
-% distinct_question now returns q(Pos, Q) using the precomputed universe.
-% Note: We iterate Pos here, but Q comes from distinct_q.
-distinct_question(MaxComplexity, NumPos, _NumQs, _CanonicalFamilies, q(Pos, Q)) :-
-    is_position(NumPos, Pos),
-    distinct_q(Q, _, C),
-    C =< MaxComplexity.
-
-% ... (rest of the file) ...
 
 % --- Self-Contained nub/2 to replace the broken library version ---
 my_nub([], []).
@@ -363,7 +422,7 @@ my_nub([H | T], T2) :-
     memberchk(H, T),
     my_nub(T, T2).
 
-is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, GeneratorGoal) :-
+is_distinguishing_tree_bounded(NumPos, NumQs, GodTypes, Tree, GeneratorGoal) :-
 
     % 1. Generate all family permutations (this may contain duplicates).
 
@@ -377,11 +436,11 @@ is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Gener
 
     % 3. Generate the Universe of Distinct Questions.
 
-    writef('Generating universe of questions (MaxComplexity=%w)...\n', [QComplexity]),
+    writeln('Generating universe of questions...'),
 
-    generate_universe(NumPos, QComplexity, UniqueFamilies, NumQs),
+    generate_universe(NumPos, UniqueFamilies, NumQs),
 
-    predicate_property(distinct_q(_,_,_), number_of_clauses(N)),
+    predicate_property(distinct_q(_,_), number_of_clauses(N)),
 
     writef('Universe generated. Distinct questions found: %w\n', [N]),
 
@@ -389,25 +448,25 @@ is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Gener
 
     % 4. Call the recursive pruning solver.
 
-    find_pruning_tree(NumQs, NumQs, QComplexity, NumPos, UniqueFamilies, UniqueFamilies, Tree).
+    find_pruning_tree(NumQs, NumQs, NumPos, UniqueFamilies, UniqueFamilies, Tree).
 
 % --- The Recursive Solver (Corrected Signature) ---
-% Signature: find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, CanonicalFamilies, CurrentFamilies, Tree)
+% Signature: find_pruning_tree(TotalNumQs, CurrentDepth, NumPos, CanonicalFamilies, CurrentFamilies, Tree)
 
 % --- Base Cases (use CurrentDepth) ---
-find_pruning_tree(_, _, _, _, _, [], leaf).
-find_pruning_tree(_, _, _, _, _, [_Family], leaf).
-find_pruning_tree(_, 0, _, _, _, Families, leaf) :-
+find_pruning_tree(_, _, _, _, [], leaf).
+find_pruning_tree(_, _, _, _, [_Family], leaf).
+find_pruning_tree(_, 0, _, _, Families, leaf) :-
     (length(Families, 1) -> true ; !, fail). % Ran out of depth
 
 % --- Recursive Pruning Step (Corrected) ---
-find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Families, tree(q(Pos, Q), DaTree, JaTree)) :-
+find_pruning_tree(TotalNumQs, CurrentDepth, NumPos, CanonicalFamilies, Families, tree(q(Pos, Q), DaTree, JaTree)) :-
     CurrentDepth > 0,
     NextDepth is CurrentDepth - 1,
 
     % --- Generate Distinct Questions ---
     % Now we just pull from our precomputed universe.
-    distinct_question(MaxQComplexity, NumPos, TotalNumQs, CanonicalFamilies, q(Pos, Q)),
+    distinct_question(NumPos, q(Pos, Q)),
 
     % --- DEBUG: Print what we're trying ---
     % length(Families, FamilyCount),
@@ -440,8 +499,8 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
     % writeln(commit(q: (Pos,Q))),
 
     % --- Recurse ---
-    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, DaFamilies, DaTree),
-    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, JaFamilies, JaTree).
+    find_pruning_tree(TotalNumQs, NextDepth, NumPos, CanonicalFamilies, DaFamilies, DaTree),
+    find_pruning_tree(TotalNumQs, NextDepth, NumPos, CanonicalFamilies, JaFamilies, JaTree).
 
 % --- Helpers required by the new algorithm ---
 
@@ -464,7 +523,7 @@ partition_families(Families, NumQs, QuestionNode, DaFamilies, JaFamilies) :-
 
 % This helper calculates the full set of answers a family can give for a single question.
 get_single_question_signature(q(Pos, Q), NumQs, Family, SignatureSet) :-
-    findall(Ans,
+    findall(Ans, 
             (   generate_worlds_from_templates(Family, NumQs, World),
                 query_position(Pos, Q, [], World, Ans) % Returns da/ja
             ),
@@ -479,23 +538,17 @@ family_answers_question(q(Pos, Q), NumQs, Family, Answer) :-
     !. % We only need to find one such world, not all of them.
 
 % find_tree_by_simplest_question(MaxQComplexity, NumPos, NumQs, GodTypes, Tree, Generator)
-find_tree_by_simplest_question(MaxQComplexity, NumPos, NumQs, GodTypes, Tree, GeneratorGoal) :-
-    % 1. Iterate through question complexities, from 0 up to the max.
-    between(0, MaxQComplexity, CurrentQComplexity),
+find_tree_by_simplest_question(_MaxQComplexity, NumPos, NumQs, GodTypes, Tree, GeneratorGoal) :-
+    % We no longer iterate complexity, just call once
+    write('--- Searching with saturated question universe ---\n'),
+    is_distinguishing_tree_bounded(NumPos, NumQs, GodTypes, Tree, GeneratorGoal).
 
-    writef('--- Searching with question complexity limit: %w ---\n', [CurrentQComplexity]),
-
-    % 2. Call a version of is_distinguishing_tree that uses the bounded generator.
-    is_distinguishing_tree_bounded(NumPos, NumQs, CurrentQComplexity, GodTypes, Tree, GeneratorGoal),
-
-    % 3. Cut ('!') to stop the search as soon as the FIRST solution is found.
-    !.
 
 
 solve_3gods_tf(Tree) :- is_distinguishing_tree_bounded(
        3,                          % Num Positions
        3,                          % Num Questions
-       10,                          % Max Question Complexity
+       % 10,                          % Max Question Complexity
        [truly, falsely, random],   % God Types to use
        Tree,                       % The variable to hold the solution
        generate_permutation_families % The name of the generator predicate to use
@@ -555,13 +608,13 @@ render_question_short(fail, "False").
 
 
 solve_and_print_riddle :-
-    NumPos = 3, NumQs = 3, QComplexity = 1,
+    NumPos = 3, NumQs = 3,
     GodTypes = [truly, falsely, random],
     Generator = generate_permutation_families,
     
     writeln('Searching for solution...'),
     
-    is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Generator),
+    is_distinguishing_tree_bounded(NumPos, NumQs, GodTypes, Tree, Generator),
     
     writeln('\n--- SOLUTION FOUND (Human Readable) ---\n'),
     draw_tree(Tree, human),

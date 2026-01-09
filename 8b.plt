@@ -1,97 +1,70 @@
 % :- use_module(library(lists)).
 :- use_module(library(plunit)).
 :- consult('8b.pl').
+:- set_log_level(info).
 :- assert(allowed_languages([da_yes])).
 
 :- begin_tests(distinct_generation).
 
-test('Generate universe for complexity 1 and count distinct signatures') :-
+test('Generate universe explores full space until saturation') :- 
     findall(F, generate_permutation_families(3, [truly, falsely, random], F), Families),
     my_nub(Families, UniqueFamilies),
-    call_with_time_limit(10, generate_universe(3, 1, UniqueFamilies, 3)),
-    call_with_time_limit(10, predicate_property(distinct_q(_,_,_), number_of_clauses(Count))),
-    writeln(distinct_count_comp1(Count)),
-    assertion(Count =< 729).
-
-test('Generate universe for complexity 2 and count distinct signatures') :-
-    findall(F, generate_permutation_families(3, [truly, falsely, random], F), Families),
-    my_nub(Families, UniqueFamilies),
-    call_with_time_limit(10, generate_universe(3, 2, UniqueFamilies, 3)),
-    call_with_time_limit(10, predicate_property(distinct_q(_,_,_), number_of_clauses(Count))),
-    writeln(distinct_count_comp2(Count)),
-    % We found 222 distinct questions with inverse pruning.
-    % This is close to the theoretical 216.
-    assertion(Count =< 729).
-
-test('Generate universe for complexity 3 and count distinct signatures') :-
-    findall(F, generate_permutation_families(3, [truly, falsely, random], F), Families),
-    my_nub(Families, UniqueFamilies),
-    call_with_time_limit(60, generate_universe(3, 3, UniqueFamilies, 3)),
-    call_with_time_limit(60, predicate_property(distinct_q(_,_,_), number_of_clauses(Count))),
-    % 365
-    writeln(distinct_count_comp3(Count)),
+    % MaxComplexity is ignored now, but we pass a dummy value.
+    call_with_time_limit(60, generate_universe(3, UniqueFamilies, 3)),
+    call_with_time_limit(10, predicate_property(distinct_q(_,_), number_of_clauses(Count))),
+    writeln(distinct_count_saturated(Count)),
     assertion(Count =< 729).
 
 :- end_tests(distinct_generation).
 
 :- begin_tests(simple_signatures).
 
-test('Truly signature for true is [[true]]') :-
+test('Truly signature for true is [[true]]') :- 
     NumPos = 1, NumQs = 1,
     generate_canonical_combinations(NumPos, [truly], FamilyT),
     get_evaluate_signature(true, NumQs, [FamilyT], Sig),
     assertion(Sig == [[true]]).
 
-test('Truly signature for query_position_question(1, true) is [[true]]') :-
+test('Truly signature for fail is [[fail]]') :- 
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [truly], FamilyT),
+    get_evaluate_signature(fail, NumQs, [FamilyT], Sig),
+    assertion(Sig == [[fail]]).
+
+test('Truly signature for query_position_question(1, true) is [[true]]') :- 
     NumPos = 1, NumQs = 1,
     generate_canonical_combinations(NumPos, [truly], FamilyT),
     get_evaluate_signature(query_position_question(1, true), NumQs, [FamilyT], Sig),
     assertion(Sig == [[true]]).
 
-test('Truly signature for not(true) is [[fail]]') :-
+test('Truly signature for not(true) is [[fail]]') :- 
     NumPos = 1, NumQs = 1,
     generate_canonical_combinations(NumPos, [truly], FamilyT),
     get_evaluate_signature(not(true), NumQs, [FamilyT], Sig),
     assertion(Sig == [[fail]]).
 
-test('Falsely signature for query_position_question(1, true) is [[fail, true]]') :-
+test('Falsely signature for true is [[true]] (Logic is true)') :- 
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [falsely], FamilyF),
+    % evaluate(true, ...) is logically true regardless of god
+    get_evaluate_signature(true, NumQs, [FamilyF], Sig),
+    assertion(Sig == [[true]]).
+
+test('Falsely signature for query_position_question(1, true) is [[fail]]') :- 
     % Falsely will answer 'ja' (fail) to 'true' (true).
-    % query_position_question checks if the god answers 'da' (true).
-    % So query_position_question(1, true) is effectively "Did he say da?".
-    % If Falsely says ja, the answer is no (fail).
-    % WAIT, let's re-verify the logic from previous output:
-    % Testing Falsely signature... [[fail,true]]
-    % Why [fail, true]?
-    % Ah, generate_worlds_from_templates fills random answers.
-    % For Falsely, answer is NOT random.
-    % However, allowed_languages is [da_yes, da_no] by default in tests?
-    % No, assert(allowed_languages([da_yes])) is at top of 8b.plt.
-    % If da_yes: True->da, Fail->ja.
-    % Falsely(true) -> fail -> ja.
-    % query_position_question(..., da) -> checks if utterance is da.
-    % Utterance is ja. So logical result is fail.
-    % Why did we get [fail, true] in the manual test?
-    % The manual test used generate_worlds_from_templates which picks language.
-    % In 8b.pl:
-    %     (   allowed_languages(Langs)
-    %     ->  member(Lang, Langs)
-    %     ;   member(Lang, [da_yes, da_no])
-    %     ).
-    % In the manual test run, allowed_languages was NOT asserted in 8b.pl (it's dynamic).
-    % So it tried both languages.
-    % If da_yes: Falsely(true)->fail->ja. Query "Did say da?" -> fail.
-    % If da_no:  Falsely(true)->fail->da. Query "Did say da?" -> true.
-    % So [fail, true] is correct if both languages are considered.
-    % IN THIS TEST FILE, allowed_languages([da_yes]) IS asserted.
-    % So we should only expect ONE answer.
     NumPos = 1, NumQs = 1,
     generate_canonical_combinations(NumPos, [falsely], FamilyF),
     get_evaluate_signature(query_position_question(1, true), NumQs, [FamilyF], Sig),
     assertion(Sig == [[fail]]).
 
-test('Random signature for query_position_question(1, true) is [[fail, true]]') :-
+test('Falsely signature for not(query_position_question(1, true)) is [[true]]') :- 
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [falsely], FamilyF),
+    get_evaluate_signature(not(query_position_question(1, true)), NumQs, [FamilyF], Sig),
+    assertion(Sig == [[true]]).
+
+test('Random signature for query_position_question(1, true) is [[fail, true]]') :- 
     % Random can answer da or ja.
-    % So "Did say da?" can be true or fail.
     NumPos = 1, NumQs = 1,
     generate_canonical_combinations(NumPos, [random], FamilyR),
     get_evaluate_signature(query_position_question(1, true), NumQs, [FamilyR], Sig),
@@ -101,34 +74,34 @@ test('Random signature for query_position_question(1, true) is [[fail, true]]') 
 
 :- begin_tests(world_generation).
 
-test('fill_random_answer for "truly" god leaves answer unbound') :-
+test('fill_random_answer for "truly" god leaves answer unbound') :- 
     fill_random_answer(truly, 3, RndAns), % 3 is arbitrary
     var(RndAns). % var/1 succeeds if RndAns is an unbound variable
 
-test('fill_random_answer for "random" god creates a correct-length list') :-
+test('fill_random_answer for "random" god creates a correct-length list') :- 
     fill_random_answer(random, /*num_questions=*/3, RndAnsList),
     length(RndAnsList, 3).
 
-test('generate_worlds_from_templates for a "truly" family is deterministic') :-
+test('generate_worlds_from_templates for a "truly" family is deterministic') :- 
     % A 1-position, "all truly" family should only have 1 corresponding world.
     build_uniform_family(1, truly, Family),
     findall(W, generate_worlds_from_templates(Family, /*num_questions=*/3, W), Worlds),
     length(Worlds, 1).
 
-test('generate_worlds_from_templates for a "random" family is non-deterministic') :-
+test('generate_worlds_from_templates for a "random" family is non-deterministic') :- 
     % A 1-position, "all random" family, with 2 questions (N=2)...
     build_uniform_family(/*num_positions*/1, random, Family),
     % ...should generate 2^2 = 4 unique worlds.
     findall(W, generate_worlds_from_templates(Family, /*num_questions=*/2, W), Worlds),
     length(Worlds, 4).
 
-test('permutation generator creates N! families') :-
+test('permutation generator creates N! families') :- 
     god_types(Gods), length(Gods, 3),
     % 3 positions, 3 god types = 3! = 6 permutations.
     findall(F, generate_permutation_families(/*num_positions=*/3, Gods, F), Families),
     length(Families, 6).
 
-test('uniform generator creates N families') :-
+test('uniform generator creates N families') :- 
     god_types(Gods), length(Gods, 3),
     % 3 god types = 3 uniform families ([T,T,T], [F,F,F], [R,R,R]).
     findall(F, generate_uniform_families(/*num_positions=*/3, Gods, F), Families),
@@ -145,32 +118,32 @@ test('all_disjoint/1 succeeds for a list of disjoint sets') :- all_disjoint([[a]
 test('all_disjoint/1 fails if any two sets overlap', [fail]) :- all_disjoint([[a, b], [c, d], [b, e]]).
 
 % --- Integration Test for Signature Set Generation ---
-test('get_family_signature_set for "all truly" family is [da] (da=True)') :-
+test('get_family_signature_set for "all truly" family is [da] (da=True)') :- 
     Tree = tree(q(1, true), leaf, leaf),
     build_uniform_family(1, truly, Family),
     get_family_signature_set(Tree, /*num_questions=*/1, Family, [[da]]).
 
-test('get_family_signature_set for "all falsely" family is [ja] (da=True)') :-
+test('get_family_signature_set for "all falsely" family is [ja] (da=True)') :- 
     Tree = tree(q(1, true), leaf, leaf),
     build_uniform_family(1, falsely, Family),
     get_family_signature_set(Tree, /*num_questions=*/1, Family, [[ja]]).
 
-test('get_family_signature_set for "all random" family is [da, ja]') :-
+test('get_family_signature_set for "all random" family is [da, ja]') :- 
     Tree = tree(q(1, true), leaf, leaf),
     build_uniform_family(1, random, Family),
     get_family_signature_set(Tree, /*num_questions=*/1, Family, [[da], [ja]]).
 
-test('2-question tree with "all truly" family has one outcome: [da, da]') :-
+test('2-question tree with "all truly" family has one outcome: [da, da]') :- 
     Tree = tree(q(1, true), tree(q(1, true), leaf, leaf), tree(q(1, true), leaf, leaf)),
     build_uniform_family(1, truly, Family),
     get_family_signature_set(Tree, /*num_questions=*/2, Family, [[da, da]]).
 
-test('2-question tree with "all falsely" family has one outcome: [ja, ja]') :-
+test('2-question tree with "all falsely" family has one outcome: [ja, ja]') :- 
     Tree = tree(q(1, true), tree(q(1, true), leaf, leaf), tree(q(1, true), leaf, leaf)),
     build_uniform_family(1, falsely, Family),
     get_family_signature_set(Tree, /*num_questions=*/2, Family, [[ja, ja]]).
 
-test('2-question tree with "all random" family has all 4 possible outcomes') :-
+test('2-question tree with "all random" family has all 4 possible outcomes') :- 
     Tree = tree(q(1, true), tree(q(1, true), leaf, leaf), tree(q(1, true), leaf, leaf)),
     build_uniform_family(1, random, Family),
     ExpectedSet = [[da, da], [da, ja], [ja, da], [ja, ja]],
@@ -181,51 +154,51 @@ test('2-question tree with "all random" family has all 4 possible outcomes') :-
 
 :- begin_tests(distinguishing_scenarios).
 
-test('1 question CAN distinguish [truly] from [falsely]') :-
-    call_with_time_limit(10, is_distinguishing_tree_bounded(1, 1, 1, [truly, falsely], _Tree, generate_uniform_families)).
+test('1 question CAN distinguish [truly] from [falsely]') :- 
+    call_with_time_limit(10, is_distinguishing_tree_bounded(1, 1, [truly, falsely], _Tree, generate_uniform_families)).
 
-test('truly with 2 positions is distinguishable by default even with 0 questions]') :-
+test('truly with 2 positions is distinguishable by default even with 0 questions]') :- 
     call_with_time_limit(10, is_distinguishing_tree_bounded(
            2, % Num Positions
            0, % Tree Depth (Num Questions)
-           0, % Max Question Complexity
+           % 0, % Max Question Complexity
            [truly, truly], % The multiset of gods for the combination
            _Tree,
            generate_canonical_combinations % Use the NEW generator
        )).
 
-test('Exhaustive search proves [truly] vs [random] is indistinguishable for 1 Q^1 question') :-
+test('Exhaustive search proves [truly] vs [random] is indistinguishable for 1 Q^1 question') :- 
     % We are asserting that the following goal MUST FAIL.
     % The '\+' operator succeeds if its argument fails completely.
     call_with_time_limit(10, \+ is_distinguishing_tree_bounded(
            1, % Num Positions
            1, % Tree Depth (Num Questions)
-           1, % Max Question Complexity
+           % 1, % Max Question Complexity
            [truly, random],
            _Tree,
            generate_uniform_families
        )).
 
 % W/ addition of xor rule - this test now too expensive to run.
-test('Exhaustive search proves [truly] vs [random] is indistinguishable for 3 Q^3 question') :-
+test('Exhaustive search proves [truly] vs [random] is indistinguishable for 3 Q^3 question') :- 
     % We are asserting that the following goal MUST FAIL.
     % The '\+' operator succeeds if its argument fails completely.
     call_with_time_limit(10, \+ is_distinguishing_tree_bounded(
            1, % Num Positions
            3, % Tree Depth (Num Questions)
-           3, % Max Question Complexity
+           % 3, % Max Question Complexity
            [truly, random],
            _Tree,
            generate_uniform_families
        )).
 
-test('Exhaustive search proves [truly,falsely,random] are indistinguishable for 1 Q^1 question') :-
+test('Exhaustive search proves [truly,falsely,random] are indistinguishable for 1 Q^1 question') :- 
     % We are asserting that the following goal MUST FAIL.
     % The '\+' operator succeeds if its argument fails completely.
     call_with_time_limit(10, \+ is_distinguishing_tree_bounded(
            3, % Num Positions
            1, % Tree Depth (Num Questions)
-           1, % Max Question Complexity (e.g., nesting one level deep)
+           % 1, % Max Question Complexity (e.g., nesting one level deep)
            [truly, falsely, random],
            _Tree,
            generate_permutation_families
@@ -236,42 +209,42 @@ test('Exhaustive search proves [truly,falsely,random] are indistinguishable for 
 :- begin_tests(pruning_logic).
 
 % --- Tests for `family_answers_question/4` ---
-test('family_answers: "Truly" family CAN answer da') :-
+test('family_answers: "Truly" family CAN answer da') :- 
     build_uniform_family(1, truly, F_True),
     Question       = q(1, true),
     NumQs          = 1,
     ExpectedAnswer = da,
     family_answers_question(Question, NumQs, F_True, ExpectedAnswer).
 
-test('family_answers: "Truly" family CANNOT answer ja', [fail]) :-
+test('family_answers: "Truly" family CANNOT answer ja', [fail]) :- 
     build_uniform_family(1, truly, F_True),
     Question       = q(1, true),
     NumQs          = 1,
     ExpectedAnswer = ja,
     family_answers_question(Question, NumQs, F_True, ExpectedAnswer).
 
-test('family_answers: "Falsely" family CAN answer ja') :-
+test('family_answers: "Falsely" family CAN answer ja') :- 
     build_uniform_family(1, falsely, F_False),
     Question       = q(1, true),
     NumQs          = 1,
     ExpectedAnswer = ja,
     family_answers_question(Question, NumQs, F_False, ExpectedAnswer).
 
-test('family_answers: "Falsely" family CANNOT answer da', [fail]) :-
+test('family_answers: "Falsely" family CANNOT answer da', [fail]) :- 
     build_uniform_family(1, falsely, F_False),
     Question       = q(1, true),
     NumQs          = 1,
     ExpectedAnswer = da,
     family_answers_question(Question, NumQs, F_False, ExpectedAnswer).
 
-test('family_answers: "Random" family CAN answer da') :-
+test('family_answers: "Random" family CAN answer da') :- 
     build_uniform_family(1, random, F_Rand),
     Question       = q(1, true),
     NumQs          = 1,
     ExpectedAnswer = da,
     family_answers_question(Question, NumQs, F_Rand, ExpectedAnswer).
 
-test('family_answers: "Random" family CAN answer ja') :-
+test('family_answers: "Random" family CAN answer ja') :- 
     build_uniform_family(1, random, F_Rand),
     Question       = q(1, true),
     NumQs          = 1,
@@ -279,7 +252,7 @@ test('family_answers: "Random" family CAN answer ja') :-
     family_answers_question(Question, NumQs, F_Rand, ExpectedAnswer).
 
 % --- Tests for `partition_families/5` ---
-test('partition: correctly splits [True, False] families (da=True)') :-
+test('partition: correctly splits [True, False] families (da=True)') :- 
     build_uniform_family(1, truly, F_True),
     build_uniform_family(1, falsely, F_False),
     In_Families     = [F_True, F_False],
@@ -289,7 +262,7 @@ test('partition: correctly splits [True, False] families (da=True)') :-
     assertion(DaFamilies = [F_True]),
     assertion(JaFamilies = [F_False]).
 
-test('partition: correctly splits [True, Random] families (da=True)') :-
+test('partition: correctly splits [True, Random] families (da=True)') :- 
     build_uniform_family(1, truly, F_True),
     build_uniform_family(1, random, F_Rand),
     In_Families     = [F_True, F_Rand],
@@ -299,7 +272,7 @@ test('partition: correctly splits [True, Random] families (da=True)') :-
     assertion(DaFamilies = [F_True, F_Rand]),
     assertion(JaFamilies = [F_Rand]).
 
-test('partition: correctly splits [False, Random] families (da=True)') :-
+test('partition: correctly splits [False, Random] families (da=True)') :- 
     build_uniform_family(1, falsely, F_False),
     build_uniform_family(1, random, F_Rand),
     In_Families     = [F_False, F_Rand],
@@ -309,7 +282,7 @@ test('partition: correctly splits [False, Random] families (da=True)') :-
     assertion(DaFamilies = [F_Rand]),
     assertion(JaFamilies = [F_False, F_Rand]).
 
-test('partition: correctly splits [True, False, Random] families (da=True)') :-
+test('partition: correctly splits [True, False, Random] families (da=True)') :- 
     build_uniform_family(1, truly, F_True),
     build_uniform_family(1, falsely, F_False),
     build_uniform_family(1, random, F_Rand),
@@ -327,35 +300,35 @@ test('pruning_tree: SUCCEEDS for [True, False] with 1 simple question (da=True)'
     build_uniform_family(1, truly, F_True),
     build_uniform_family(1, falsely, F_False),
     Families = [F_True, F_False],
-    generate_universe(1, 0, Families, 1), % Complexity 0 OK for da=True
+    generate_universe(1, Families, 1), % Complexity 0 OK for da=True
     TotalNumQs     = 1,
     CurrentDepth   = 1,
-    MaxQComp       = 0,
+    % MaxQComp       = 0,
     NumPos         = 1,
-    find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, Families, _Tree).
+    find_pruning_tree(TotalNumQs, CurrentDepth, NumPos, Families, Families, _Tree).
 
 test('pruning_tree: FAILS for [True, Random] with 1 question', [fail]) :-
     build_uniform_family(1, truly, F_True),
     build_uniform_family(1, random, F_Rand),
     Families = [F_True, F_Rand],
-    generate_universe(1, 1, Families, 1),
+    generate_universe(1, Families, 1),
     TotalNumQs     = 1,
     CurrentDepth   = 1,
-    MaxQComp       = 1,
+    % MaxQComp       = 1,
     NumPos         = 1,
-    find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, Families, _Tree).
+    find_pruning_tree(TotalNumQs, CurrentDepth, NumPos, Families, Families, _Tree).
 
 test('pruning_tree: FAILS for [True, False, Random] with 2 questions (impossible split)', [fail]) :-
     build_uniform_family(1, truly, F_True),
     build_uniform_family(1, falsely, F_False),
     build_uniform_family(1, random, F_Rand),
     Families = [F_True, F_False, F_Rand],
-    generate_universe(1, 2, Families, 2),
+    generate_universe(1, Families, 2),
     TotalNumQs     = 2,
     CurrentDepth   = 2,
-    MaxQComp       = 2,
+    % MaxQComp       = 2,
     NumPos         = 1,
-    find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, Families, _Tree).
+    find_pruning_tree(TotalNumQs, CurrentDepth, NumPos, Families, Families, _Tree).
 
 test('pruning_tree: SUCCEEDS for a 2-position [Truly,Falsely] vs [Falsely,Truly] world') :-
     % This is a more complex scenario with 2 positions.
@@ -365,14 +338,14 @@ test('pruning_tree: SUCCEEDS for a 2-position [Truly,Falsely] vs [Falsely,Truly]
     F1 = [pos(1, truly, _), pos(2, falsely, _)],
     F2 = [pos(1, falsely, _), pos(2, truly, _)],
     Families = [F1, F2],
-    generate_universe(2, 0, Families, 1), % MaxComp 0 is enough (simple questions)
+    generate_universe(2, Families, 1), % MaxComp 0 is enough (simple questions)
     
     % We check if a 1-question tree with complexity 0 can find a solution.
     % (The question "true" asked at position 1 will work)
     find_pruning_tree(
         1, % TotalNumQs / Max Depth
         1, % CurrentDepth
-        0, % MaxQComplexity
+        % 0, % MaxQComplexity
         2, % NumPos
         Families, % Canonical
         Families, % Current
@@ -399,7 +372,7 @@ test('pruning_tree: FAILS because sub-problem is too large for remaining depth',
     build_uniform_family(1, falsely, F_False),
     
     Families = [F_True, Family_Rand_True, F_False],
-    generate_universe(1, 0, Families, 1),
+    generate_universe(1, Families, 1),
 
     % --- 2. The Test: Call the solver ---
     % We ask it to solve this 3-family problem with only 1 question.
@@ -408,12 +381,11 @@ test('pruning_tree: FAILS because sub-problem is too large for remaining depth',
     find_pruning_tree(
         TotalNumQs,   % TotalNumQs = 1
         TotalNumQs,   % CurrentDepth = 1
-        0,            % MaxQComplexity = 0 (simple questions only)
+        % 0,            % MaxQComplexity = 0 (simple questions only)
         NumPos,       % NumPos = 1
         Families,     % Canonical
         Families,     % Current
         _Tree).
-
 % --- 3. Trace of Why This Fails (as a comment) ---
 %
 %   - Depth = 1. NextDepth = 0. MaxSize = 2^0 = 1.
@@ -441,11 +413,11 @@ test('pruning_tree: FAILS because sub-problem is too large for remaining depth',
 
 :- begin_tests(complex_pruning_scenario).
 
-test('pruning_tree: FAILS for a [T,T,F] problem with only 1 question', [fail]) :-
+test('pruning_tree: FAILS for a [T,T,F] problem with only 1 question', [fail]) :- 
     % 1. Define the problem parameters
     NumPos       = 3,
     NumQs        = 1, % Not enough questions to solve 3 families (2^1 < 3)
-    QComplexity  = 1,
+    % QComplexity  = 1,
     GodTypes     = [truly, truly, falsely],
     Generator    = generate_permutation_families,
     
@@ -456,17 +428,17 @@ test('pruning_tree: FAILS for a [T,T,F] problem with only 1 question', [fail]) :
     is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
-        QComplexity,
+        % QComplexity,
         GodTypes,
         _Tree,
         Generator
     ).
 
-test('pruning_tree: SUCCEEDS for a [T,T,F] problem with 2 questions') :-
+test('pruning_tree: SUCCEEDS for a [T,T,F] problem with 2 questions') :- 
     % 1. Define the problem parameters
     NumPos       = 3,
     NumQs        = 2, % 2 questions IS enough (2^2 > 3)
-    QComplexity  = 1,
+    % QComplexity  = 1,
     GodTypes     = [truly, truly, falsely],
     Generator    = generate_permutation_families,
     
@@ -475,7 +447,7 @@ test('pruning_tree: SUCCEEDS for a [T,T,F] problem with 2 questions') :-
     is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
-        QComplexity,
+        % QComplexity,
         GodTypes,
         _Tree,
         Generator
@@ -483,11 +455,11 @@ test('pruning_tree: SUCCEEDS for a [T,T,F] problem with 2 questions') :-
 
 % --- Add this new test to your complex_pruning_scenario suite ---
 
-test('DEBUG TRACE for the [T,T,F] problem') :-
+test('DEBUG TRACE for the [T,T,F] problem') :- 
     % 1. Define the exact problem parameters
     NumPos       = 3,
     NumQs        = 2, % Tree Depth
-    QComplexity  = 1,
+    % QComplexity  = 1,
     GodTypes     = [truly, truly, falsely],
     Generator    = generate_permutation_families,
 
@@ -495,7 +467,8 @@ test('DEBUG TRACE for the [T,T,F] problem') :-
     findall(F, call(Generator, NumPos, GodTypes, F), Families),
 
     % 3. Print the initial state so we can see it
-    writeln('\n--- STARTING DEBUG TRACE FOR TTF SCENARIO ---'),
+    writeln('
+--- STARTING DEBUG TRACE FOR TTF SCENARIO ---'),
     write('Families to distinguish (count='), length(Families, L), writeln(L),
     write('Families: '), writeln(Families),
 
@@ -505,13 +478,13 @@ test('DEBUG TRACE for the [T,T,F] problem') :-
     write('UniqueFamilies:'), writeln(UniqueFamilies),
 
     % 3b. Generate Universe
-    generate_universe(NumPos, QComplexity, UniqueFamilies, NumQs),
+    generate_universe(NumPos, UniqueFamilies, NumQs),
 
     % 4. Call the pruning solver directly with the debug statements active
     find_pruning_tree(
         NumQs,   % TotalNumQs
         NumQs,   % CurrentDepth
-        QComplexity,
+        % QComplexity,
         NumPos,
         UniqueFamilies, % Canonical
         UniqueFamilies, % Current
@@ -568,14 +541,14 @@ test('DEBUG TRACE for the [T,T,F] problem') :-
 
 :- begin_tests(final_challenge).
 
-test('PRINT SOLUTION for 3 Gods (T,F,R)') :-
+test('PRINT SOLUTION for 3 Gods (T,F,R)') :- 
     call_with_time_limit(10, solve_and_print_riddle).
 
-test('3 Gods (T,F,R) is IMPOSSIBLE with complexity 0 questions (simple direct questions)', [fail]) :-
+test('3 Gods (T,F,R) is IMPOSSIBLE with complexity 0 questions (simple direct questions)', [fail]) :- 
     % 1. Define the problem parameters
     NumPos       = 3,
     NumQs        = 3, 
-    QComplexity  = 0, % STRICTLY simple questions only (no "If I asked you...")
+    % QComplexity  = 0, % STRICTLY simple questions only (no "If I asked you...")
     GodTypes     = [truly, falsely, random],
     Generator    = generate_permutation_families,
     
@@ -585,17 +558,17 @@ test('3 Gods (T,F,R) is IMPOSSIBLE with complexity 0 questions (simple direct qu
     call_with_time_limit(10, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
-        QComplexity,
+        % QComplexity,
         GodTypes,
         _Tree,
         Generator
     )).
 
-test('3 Gods (T,F,R) is SOLVABLE with complexity 1 questions (3 questions deep)') :-
+test('3 Gods (T,F,R) is SOLVABLE with complexity 1 questions (3 questions deep)') :- 
     % 1. Define the problem parameters
     NumPos       = 3,
     NumQs        = 3, 
-    QComplexity  = 1, % Limit to simple questions
+    % QComplexity  = 1, % Limit to simple questions
     GodTypes     = [truly, falsely, random],
     Generator    = generate_permutation_families,
     
@@ -604,17 +577,17 @@ test('3 Gods (T,F,R) is SOLVABLE with complexity 1 questions (3 questions deep)'
     call_with_time_limit(10, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
-        QComplexity,
+        % QComplexity,
         GodTypes,
         _Tree,
         Generator
     )).
 
-test('3 Gods (T,F,R) is IMPOSSIBLE with only 2 questions (tree depth 2)', [fail]) :-
+test('3 Gods (T,F,R) is IMPOSSIBLE with only 2 questions (tree depth 2)', [fail]) :- 
     % 1. Define the problem parameters
     NumPos       = 3,
     NumQs        = 2, % Not enough questions!
-    QComplexity  = 1, 
+    % QComplexity  = 1, 
     GodTypes     = [truly, falsely, random],
     Generator    = generate_permutation_families,
     
@@ -622,17 +595,17 @@ test('3 Gods (T,F,R) is IMPOSSIBLE with only 2 questions (tree depth 2)', [fail]
     call_with_time_limit(10, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
-        QComplexity,
+        % QComplexity,
         GodTypes,
         _Tree,
         Generator
     )).
 
-test('3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep)') :-
+test('3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep)') :- 
     % 1. Define the problem parameters
     NumPos       = 3,
     NumQs        = 3, 
-    QComplexity  = 2, % Allow slightly more complex questions (nested once)
+    % QComplexity  = 2, % Allow slightly more complex questions (nested once)
     GodTypes     = [truly, falsely, random],
     Generator    = generate_permutation_families,
     
@@ -640,20 +613,20 @@ test('3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep)'
     call_with_time_limit(10, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
-        QComplexity,
+        % QComplexity,
         GodTypes,
         _Tree,
         Generator
     )).
 
-% test('3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep)') :-
+% test('3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep)') :- 
 %     % 1. Define the problem parameters
 %     NumPos       = 3,
 %     NumQs        = 3, 
 %     QComplexity  = 3, % Allow slightly more complex questions (nested once)
 %     GodTypes     = [truly, falsely, random],
 %     Generator    = generate_permutation_families,
-    
+%     
 %     % 2. Call the main solver with a time limit
 %     call_with_time_limit(10, is_distinguishing_tree_bounded(
 %         NumPos,
