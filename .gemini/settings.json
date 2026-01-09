@@ -1,5 +1,7 @@
 {
   "general": {
     "previewFeatures": true
-  }
+  },
+  "geminicodeassist.agentYoloMode": true,
+  "geminicodeassist.project": "inspired-glass-rzsgc"
 }

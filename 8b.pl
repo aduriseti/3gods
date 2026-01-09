@@ -315,17 +315,16 @@ process_candidates([], _, _, _, _).
 process_candidates([Q|Rest], C, NumQs, NumPos, Families) :-
     % 1. Compute Logic Signature (Split by Language) for Recursion
     get_evaluate_signature(Q, NumQs, Families, LogicSig),
-    % No more inversion or swapping of logic signatures.
+    invert_logic_signature(LogicSig, InvLogicSig),
 
-    (   seen_logic_sig(LogicSig)
-    ->  true % Skip logic registration if redundant (for recursion)
+    (   (seen_logic_sig(LogicSig) ; seen_logic_sig(InvLogicSig))
+    ->  true % Skip logic registration if redundant
     ;   assertz(seen_logic_sig(LogicSig)),
-        assertz(distinct_logic_q(Q, LogicSig, C))
+        assertz(distinct_logic_q(Q, LogicSig, C)),
+        
+        % 2. ONLY generate actions if this is a NEW distinct logical question.
+        generate_actions_for_q(Q, C, NumQs, NumPos, Families)
     ),
-
-    % 2. ALWAYS try to generate actions for the solver, even if logic was seen.
-    %    (Because Union Logic Sig might merge questions with distinct Actions)
-    generate_actions_for_q(Q, C, NumQs, NumPos, Families),
 
     process_candidates(Rest, C, NumQs, NumPos, Families).
 
@@ -340,7 +339,7 @@ generate_actions_for_q(Q, C, _NumQs, NumPos, _Families) :-
 generate_actions_for_q(_, _, _, _, _).
 
 % Computes the LOGIC signature of `evaluate(Q)` across all worlds in Families.
-% Merges languages to reduce state space to 3^NumFamilies.
+% Merges languages to reduce state space to 3^NumFamilies (theoretical max 729).
 get_evaluate_signature(Q, NumQs, Families, Sig) :-
     maplist(get_family_eval_set_merged_lang(Q, NumQs), Families, Sig).
 
@@ -357,6 +356,20 @@ get_family_eval_set_fixed_lang(Q, NumQs, Family, Lang, AnswerSet) :-
             ),
             RawAnswers),
     sort(RawAnswers, AnswerSet).
+
+% Inverts a LOGIC signature (List of UnionSets)
+invert_logic_signature(Sig, InvSig) :-
+    maplist(invert_answer_set, Sig, InvSig).
+    % Note: invert_answer_set handles [true]->[fail], [fail]->[true], [both]->[both]
+
+invert_answer_set(Set, InvSet) :-
+    maplist(invert_atom, Set, InvList),
+    sort(InvList, InvSet).
+
+invert_atom(true, fail).
+invert_atom(fail, true).
+invert_atom(da, ja).
+invert_atom(ja, da).
 
 
 
