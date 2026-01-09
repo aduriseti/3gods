@@ -2,6 +2,29 @@
 :- use_module(library(plunit)).
 :- consult('8b.pl').
 :- assert(allowed_languages([da_yes])).
+:- assert(current_log_level(info)).
+
+:- begin_tests(simple_signatures).
+
+test('Truly signature for true is [[true]]') :-
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [truly], FamilyT),
+    get_evaluate_signature(true, NumQs, [FamilyT], Sig),
+    assertion(Sig == [[true]]).
+
+test('Falsely signature for query_position_question(1, true) is [[true]]') :-
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [falsely], FamilyF),
+    get_evaluate_signature(query_position_question(1, true), NumQs, [FamilyF], Sig),
+    assertion(Sig == [[fail]]).
+
+test('Random signature for query_position_question(1, true) is [[fail, true]]') :-
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [random], FamilyR),
+    get_evaluate_signature(query_position_question(1, true), NumQs, [FamilyR], Sig),
+    assertion(Sig == [[fail, true]]).
+
+:- end_tests(simple_signatures).
 
 :- begin_tests(distinct_generation).
 
@@ -11,7 +34,7 @@ test('Generate universe for complexity 1 and count distinct signatures') :-
     call_with_time_limit(10, generate_universe(3, 1, UniqueFamilies, 3)),
     call_with_time_limit(10, predicate_property(distinct_q(_,_,_), number_of_clauses(Count))),
     writeln(distinct_count_comp1(Count)),
-    assertion(Count =< 729).
+    assertion(Count =< 365).
 
 test('Generate universe for complexity 2 and count distinct signatures') :-
     findall(F, generate_permutation_families(3, [truly, falsely, random], F), Families),
@@ -21,16 +44,16 @@ test('Generate universe for complexity 2 and count distinct signatures') :-
     writeln(distinct_count_comp2(Count)),
     % We found 222 distinct questions with inverse pruning.
     % This is close to the theoretical 216.
-    assertion(Count =< 729).
+    assertion(Count =< 365).
 
 test('Generate universe for complexity 3 and count distinct signatures') :-
     findall(F, generate_permutation_families(3, [truly, falsely, random], F), Families),
     my_nub(Families, UniqueFamilies),
-    call_with_time_limit(60, generate_universe(3, 3, UniqueFamilies, 3)),
-    call_with_time_limit(60, predicate_property(distinct_q(_,_,_), number_of_clauses(Count))),
+    call_with_time_limit(30, generate_universe(3, 3, UniqueFamilies, 3)),
+    call_with_time_limit(10, predicate_property(distinct_q(_,_,_), number_of_clauses(Count))),
     % 365
     writeln(distinct_count_comp3(Count)),
-    assertion(Count =< 729).
+    assertion(Count =< 365).
 
 :- end_tests(distinct_generation).
 
@@ -605,22 +628,22 @@ test('3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep)'
         Generator
     )).
 
-% test('3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep)') :-
-%     % 1. Define the problem parameters
-%     NumPos       = 3,
-%     NumQs        = 3, 
-%     QComplexity  = 3, % Allow slightly more complex questions (nested once)
-%     GodTypes     = [truly, falsely, random],
-%     Generator    = generate_permutation_families,
+test('3 Gods (T,F,R) is SOLVABLE with complexity 3 questions (3 questions deep)') :-
+    % 1. Define the problem parameters
+    NumPos       = 3,
+    NumQs        = 3, 
+    QComplexity  = 3, % Allow slightly more complex questions (nested once)
+    GodTypes     = [truly, falsely, random],
+    Generator    = generate_permutation_families,
     
-%     % 2. Call the main solver with a time limit
-%     call_with_time_limit(10, is_distinguishing_tree_bounded(
-%         NumPos,
-%         NumQs,
-%         QComplexity,
-%         GodTypes,
-%         _Tree,
-%         Generator
-%     )).
+    % 2. Call the main solver with a time limit
+    call_with_time_limit(30, is_distinguishing_tree_bounded(
+        NumPos,
+        NumQs,
+        QComplexity,
+        GodTypes,
+        _Tree,
+        Generator
+    )).
 
 :- end_tests(final_challenge).
