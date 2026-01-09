@@ -84,14 +84,6 @@ query_position(Position, Question, Path, w(PosList, Language), Utterance) :-
     % Map Logical Result to Utterance based on Language
     get_utterance(LogicalAns, Language, Utterance).
 
-% Backwards compatibility for tests that might call query_position/4 expecting logical truth
-% (Though we should update tests ideally, but this helps safe-guard)
-% query_position(Position, Question, Path, WorldState) :-
-%    query_position(Position, Question, Path, WorldState, da). 
-%    % NOTE: This would mean "Did he say da?". 
-%    % But old tests expected logical result. 
-%    % Better to update tests.
-
 % --- The Grammar ---
 % Base Case 1: Trivial questions are allowed.
 is_question(_, _, true).

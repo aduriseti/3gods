@@ -3,6 +3,28 @@
 :- consult('8b.pl').
 :- assert(allowed_languages([da_yes])).
 
+:- begin_tests(simple_signatures).
+
+test('Truly signature for true is [[true]]') :-
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [truly], FamilyT),
+    get_evaluate_signature(true, NumQs, [FamilyT], Sig),
+    assertion(Sig == [[true]]).
+
+test('Falsely signature for query_position_question(1, true) is [[true]]') :-
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [falsely], FamilyF),
+    get_evaluate_signature(query_position_question(1, true), NumQs, [FamilyF], Sig),
+    assertion(Sig == [[fail]]).
+
+test('Random signature for query_position_question(1, true) is [[fail, true]]') :-
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [random], FamilyR),
+    get_evaluate_signature(query_position_question(1, true), NumQs, [FamilyR], Sig),
+    assertion(Sig == [[fail, true]]).
+
+:- end_tests(simple_signatures).
+
 :- begin_tests(distinct_generation).
 
 test('Generate universe for complexity 1 and count distinct signatures') :-
