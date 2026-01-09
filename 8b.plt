@@ -2,7 +2,7 @@
 :- use_module(library(plunit)).
 :- consult('8b.pl').
 :- assert(allowed_languages([da_yes])).
-:- current_log_level(info).
+:- assert(current_log_level(info)).
 
 :- begin_tests(simple_signatures).
 

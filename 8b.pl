@@ -280,7 +280,12 @@ generate_universe(NumPos, MaxComplexity, CanonicalFamilies, NumQs) :-
     % Iterative Step
     between(1, MaxComplexity, C),
     generate_candidates_at_complexity(C, NumPos, Candidates),
+    length(Candidates, NumCandidates),
+    log(info, 'Generated ~w candidates at complexity ~w', [NumCandidates, C]),
     process_candidates(Candidates, C, NumQs, CanonicalFamilies),
+    % get # of distinct questions so far
+    predicate_property(distinct_q(_,_,_), number_of_clauses(N)),
+    log(info, 'Distinct questions so far: ~w', [N]),
     fail. % Force loop through all complexities
 generate_universe(_, _, _, _).
 
@@ -334,7 +339,10 @@ process_candidates([Q|Rest], C, NumQs, Families) :-
     ->  true
     ;   assertz(seen_signature(Sig)),
         assertz(distinct_q(Q, Sig, C)),
-        log(debug, 'Found new Q: ~w (C=~w)', [Q, C])
+        log(debug, 'Found new Q: ~w (C=~w)', [Q, C]),
+        % # of distinct questions so far
+        predicate_property(distinct_q(_,_,_), number_of_clauses(N)),
+        log(debug, 'Distinct questions so far: ~w', [N])
     ),
     process_candidates(Rest, C, NumQs, Families).
 
@@ -454,7 +462,7 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
     MaxSize is 2^NextDepth,
     (   ( DaSize > MaxSize ; JaSize > MaxSize )
     ->  % This branch is taken if the sub-problem is too big
-        log(info, 'prune(reason: sub-problem too large)'),
+        log(debug, 'prune(reason: sub-problem too large)'),
         fail % Just fail, allowing Prolog to backtrack to the 'between' loop
     ;   % This branch is taken if the check passes
         true
