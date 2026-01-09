@@ -34,29 +34,70 @@ test('Generate universe for complexity 3 and count distinct signatures') :-
 
 :- end_tests(distinct_generation).
 
-:- begin_tests(signature_inversion).
+:- begin_tests(simple_signatures).
 
-test('invert_atom inverts true/fail correctly') :-
-    invert_atom(true, fail),
-    invert_atom(fail, true).
+test('Truly signature for true is [[true]]') :-
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [truly], FamilyT),
+    get_evaluate_signature(true, NumQs, [FamilyT], Sig),
+    assertion(Sig == [[true]]).
 
-test('invert_answer_set inverts [true] to [fail]') :-
-    invert_answer_set([true], [fail]).
+test('Truly signature for query_position_question(1, true) is [[true]]') :-
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [truly], FamilyT),
+    get_evaluate_signature(query_position_question(1, true), NumQs, [FamilyT], Sig),
+    assertion(Sig == [[true]]).
 
-test('invert_answer_set inverts [fail] to [true]') :-
-    invert_answer_set([fail], [true]).
+test('Truly signature for not(true) is [[fail]]') :-
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [truly], FamilyT),
+    get_evaluate_signature(not(true), NumQs, [FamilyT], Sig),
+    assertion(Sig == [[fail]]).
 
-test('invert_answer_set inverts [fail, true] to [fail, true]') :-
-    invert_answer_set([fail, true], Inv),
-    sort(Inv, Sorted),
-    Sorted = [fail, true].
+test('Falsely signature for query_position_question(1, true) is [[fail, true]]') :-
+    % Falsely will answer 'ja' (fail) to 'true' (true).
+    % query_position_question checks if the god answers 'da' (true).
+    % So query_position_question(1, true) is effectively "Did he say da?".
+    % If Falsely says ja, the answer is no (fail).
+    % WAIT, let's re-verify the logic from previous output:
+    % Testing Falsely signature... [[fail,true]]
+    % Why [fail, true]?
+    % Ah, generate_worlds_from_templates fills random answers.
+    % For Falsely, answer is NOT random.
+    % However, allowed_languages is [da_yes, da_no] by default in tests?
+    % No, assert(allowed_languages([da_yes])) is at top of 8b.plt.
+    % If da_yes: True->da, Fail->ja.
+    % Falsely(true) -> fail -> ja.
+    % query_position_question(..., da) -> checks if utterance is da.
+    % Utterance is ja. So logical result is fail.
+    % Why did we get [fail, true] in the manual test?
+    % The manual test used generate_worlds_from_templates which picks language.
+    % In 8b.pl:
+    %     (   allowed_languages(Langs)
+    %     ->  member(Lang, Langs)
+    %     ;   member(Lang, [da_yes, da_no])
+    %     ).
+    % In the manual test run, allowed_languages was NOT asserted in 8b.pl (it's dynamic).
+    % So it tried both languages.
+    % If da_yes: Falsely(true)->fail->ja. Query "Did say da?" -> fail.
+    % If da_no:  Falsely(true)->fail->da. Query "Did say da?" -> true.
+    % So [fail, true] is correct if both languages are considered.
+    % IN THIS TEST FILE, allowed_languages([da_yes]) IS asserted.
+    % So we should only expect ONE answer.
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [falsely], FamilyF),
+    get_evaluate_signature(query_position_question(1, true), NumQs, [FamilyF], Sig),
+    assertion(Sig == [[fail]]).
 
-test('invert_signature inverts a list of answer sets') :-
-    Sig = [[true], [fail], [fail, true]],
-    invert_signature(Sig, InvSig),
-    InvSig = [[fail], [true], [fail, true]].
+test('Random signature for query_position_question(1, true) is [[fail, true]]') :-
+    % Random can answer da or ja.
+    % So "Did say da?" can be true or fail.
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [random], FamilyR),
+    get_evaluate_signature(query_position_question(1, true), NumQs, [FamilyR], Sig),
+    assertion(Sig == [[fail, true]]).
 
-:- end_tests(signature_inversion).
+:- end_tests(simple_signatures).
 
 :- begin_tests(world_generation).
 

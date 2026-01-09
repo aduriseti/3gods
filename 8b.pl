@@ -49,7 +49,11 @@ evaluate((Q1 xor Q2), Path, WorldState) :-
     ;
     ( \+ evaluate(Q1, Path, WorldState), evaluate(Q2, Path, WorldState) ).
 
-% 4. Evaluate state-dependent questions by calling them with the WorldState
+% 4. Evaluate logical NOT
+evaluate(not(Q), Path, WorldState) :-
+    \+ evaluate(Q, Path, WorldState).
+
+% 5. Evaluate state-dependent questions by calling them with the WorldState
 evaluate(at_position_question(P, G), _, WS) :-
     at_position(P, G, WS). % at_position doesn't need the path
 evaluate(query_position_question(Pos, SubQ), Path, WS) :-
@@ -126,6 +130,11 @@ is_question(NumPos, MaxQDepth, (Q1 xor Q2)) :-
     NextQDepth is MaxQDepth - 1,
     is_question(NumPos, NextQDepth, Q1),
     is_question(NumPos, NextQDepth, Q2).
+
+is_question(NumPos, MaxQDepth, not(Q)) :-
+    MaxQDepth > 0,
+    NextQDepth is MaxQDepth - 1,
+    is_question(NumPos, NextQDepth, Q).
 
 % --- The Logic ---
 % --- World State Generation ---
@@ -298,15 +307,17 @@ candidate_at_complexity(C, _, (Q1 xor Q2)) :-
     distinct_q(Q2, _, C2),
     max_member(TargetSubC, [C1, C2]).
 
+candidate_at_complexity(C, _, not(Q)) :-
+    TargetSubC is C - 1,
+    distinct_q(Q, _, TargetSubC).
+
 % Processes a list of candidate questions: computes signatures and stores new ones.
 process_candidates([], _, _, _).
 process_candidates([Q|Rest], C, NumQs, Families) :-
     % ... (comments about signature logic) ...
     get_evaluate_signature(Q, NumQs, Families, Sig),
     
-    invert_signature(Sig, InvSig),
-
-    (   (seen_signature(Sig) ; seen_signature(InvSig))
+    (   (seen_signature(Sig))
     ->  true
     ;   assertz(seen_signature(Sig)),
         assertz(distinct_q(Q, Sig, C))
@@ -314,18 +325,7 @@ process_candidates([Q|Rest], C, NumQs, Families) :-
     ),
     process_candidates(Rest, C, NumQs, Families).
 
-% Inverts a signature (List of answer sets) to check for symmetry.
-% Symmetry: Q splits families into (A, B). "not Q" splits into (B, A).
-% Since A, B partition the space, {A, B} is the same partition as {B, A}.
-invert_signature(Sig, InvSig) :-
-    maplist(invert_answer_set, Sig, InvSig).
 
-invert_answer_set(Set, InvSet) :-
-    maplist(invert_atom, Set, InvList),
-    sort(InvList, InvSet).
-
-invert_atom(true, fail).
-invert_atom(fail, true).
 
 % Computes the signature of `evaluate(Q)` across all worlds in Families.
 % NEW: Computes FAMILY-LEVEL signature.
@@ -397,7 +397,7 @@ is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Gener
 % --- Base Cases (use CurrentDepth) ---
 find_pruning_tree(_, _, _, _, _, [], leaf).
 find_pruning_tree(_, _, _, _, _, [_Family], leaf).
-find_pruning_tree(_, 0, _, _, _, Families, leaf) :- % Base case for depth
+find_pruning_tree(_, 0, _, _, _, Families, leaf) :-
     (length(Families, 1) -> true ; !, fail). % Ran out of depth
 
 % --- Recursive Pruning Step (Corrected) ---
@@ -547,6 +547,9 @@ render_question_short((Q1 xor Q2), S) :-
     render_question_short(Q1, S1),
     render_question_short(Q2, S2),
     format(string(S), "(~s XOR ~s)", [S1, S2]).
+render_question_short(not(Q), S) :-
+    render_question_short(Q, SubS),
+    format(string(S), "NOT %s", [SubS]).
 render_question_short(true, "True").
 render_question_short(fail, "False").
 
@@ -560,10 +563,10 @@ solve_and_print_riddle :-
     
     is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Generator),
     
-    writeln('\n--- SOLUTION FOUND (Human Readable) ---'),
+    writeln('\n--- SOLUTION FOUND (Human Readable) ---\n'),
     draw_tree(Tree, human),
     
-    writeln('\n--- SOLUTION FOUND (Raw Prolog Object) ---'),
+    writeln('\n--- SOLUTION FOUND (Raw Prolog Object) ---\n'),
     draw_tree(Tree, raw).
 
 
@@ -620,6 +623,11 @@ render_question((Q1 xor Q2), String) :-
     render_question(Q2, RawSubString2),
     indent_lines(RawSubString2, S2),
     format(string(String), "(\n~s\n  XOR\n~s\n)", [S1, S2]).
+
+render_question(not(Q), String) :-
+    render_question(Q, RawSubString),
+    indent_lines(RawSubString, SubS),
+    format(string(String), "NOT (\n%s\n)", [SubS]).
 
 % --- Modified Recursive Cases ---
 % indent_lines(RawString, IndentedString)
