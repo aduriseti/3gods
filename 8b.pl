@@ -2,7 +2,39 @@
 
 iamrunningthelatestversion.
 
+% --- Logging Infrastructure ---
+:- dynamic current_log_level/1.
+current_log_level(warning).
+
+level_value(debug, 10).
+level_value(info, 20).
+level_value(warning, 30).
+level_value(error, 40).
+level_value(fatal, 50).
+
+should_log(MsgLevel) :-
+    current_log_level(CurLevel),
+    level_value(MsgLevel, MsgVal),
+    level_value(CurLevel, CurVal),
+    MsgVal >= CurVal.
+
+log(Level, Message) :-
+    (   should_log(Level)
+    ->  upcase_atom(Level, UpperLevel),
+        format('~w: ~w~n', [UpperLevel, Message])
+    ;   true
+    ).
+
+log(Level, Format, Args) :-
+    (   should_log(Level)
+    ->  format(string(Msg), Format, Args),
+        upcase_atom(Level, UpperLevel),
+        format('~w: ~s~n', [UpperLevel, Msg])
+    ;   true
+    ).
+
 % --- The World ---
+
 % --- Core Query Logic ---
 
 % This rule now generates all positions from 1 to N.
@@ -301,8 +333,8 @@ process_candidates([Q|Rest], C, NumQs, Families) :-
     (   (seen_signature(Sig) ; seen_signature(InvSig))
     ->  true
     ;   assertz(seen_signature(Sig)),
-        assertz(distinct_q(Q, Sig, C))
-        % writef('Found new Q: %w (C=%w)\n', [Q, C])
+        assertz(distinct_q(Q, Sig, C)),
+        log(debug, 'Found new Q: ~w (C=~w)', [Q, C])
     ),
     process_candidates(Rest, C, NumQs, Families).
 
@@ -369,13 +401,13 @@ is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Gener
 
     % 3. Generate the Universe of Distinct Questions.
 
-    writef('Generating universe of questions (MaxComplexity=%w)...\n', [QComplexity]),
+    log(info, 'Generating universe of questions (MaxComplexity=~w)...', [QComplexity]),
 
     generate_universe(NumPos, QComplexity, UniqueFamilies, NumQs),
 
     predicate_property(distinct_q(_,_,_), number_of_clauses(N)),
 
-    writef('Universe generated. Distinct questions found: %w\n', [N]),
+    log(info, 'Universe generated. Distinct questions found: ~w', [N]),
 
 
 
@@ -402,15 +434,15 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
     distinct_question(MaxQComplexity, NumPos, TotalNumQs, CanonicalFamilies, q(Pos, Q)),
 
     % --- DEBUG: Print what we're trying ---
-    % length(Families, FamilyCount),
-    % writeln(try(depth: CurrentDepth, q: (Pos,Q), families_in: FamilyCount)),
+    length(Families, FamilyCount),
+    log(debug, 'try(depth: ~w, q: ~w, families_in: ~w)', [CurrentDepth, q(Pos, Q), FamilyCount]),
 
     partition_families(Families, TotalNumQs, q(Pos, Q), DaFamilies, JaFamilies),
 
     % --- DEBUG: Print the result of the partition ---
     length(DaFamilies, DaSize),
     length(JaFamilies, JaSize),
-    % writeln(partition(da_count: DaSize, ja_count: JaSize)),
+    log(debug, 'partition(da_count: ~w, ja_count: ~w)', [DaSize, JaSize]),
 
     % --- Pruning Check 1: Useless Split (Corrected) ---
     % Succeeds only if the split is useful (neither side is empty).
@@ -422,14 +454,14 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
     MaxSize is 2^NextDepth,
     (   ( DaSize > MaxSize ; JaSize > MaxSize )
     ->  % This branch is taken if the sub-problem is too big
-        % writeln(prune(reason: 'sub-problem too large')),
+        log(info, 'prune(reason: sub-problem too large)'),
         fail % Just fail, allowing Prolog to backtrack to the 'between' loop
     ;   % This branch is taken if the check passes
         true
     ),
 
     % If we get here, the question was good. No commit cut is needed.
-    % writeln(commit(q: (Pos,Q))),
+    log(debug, 'commit(q: ~w)', [q(Pos, Q)]),
 
     % --- Recurse ---
     find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, DaFamilies, DaTree),
@@ -475,7 +507,7 @@ find_tree_by_simplest_question(MaxQComplexity, NumPos, NumQs, GodTypes, Tree, Ge
     % 1. Iterate through question complexities, from 0 up to the max.
     between(0, MaxQComplexity, CurrentQComplexity),
 
-    writef('--- Searching with question complexity limit: %w ---\n', [CurrentQComplexity]),
+    log(info, '--- Searching with question complexity limit: ~w ---', [CurrentQComplexity]),
 
     % 2. Call a version of is_distinguishing_tree that uses the bounded generator.
     is_distinguishing_tree_bounded(NumPos, NumQs, CurrentQComplexity, GodTypes, Tree, GeneratorGoal),
@@ -548,14 +580,14 @@ solve_and_print_riddle :-
     GodTypes = [truly, falsely, random],
     Generator = generate_permutation_families,
     
-    writeln('Searching for solution...'),
+    log(info, 'Searching for solution...'),
     
     is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Generator),
     
-    writeln('\n--- SOLUTION FOUND (Human Readable) ---'),
+    log(info, '--- SOLUTION FOUND (Human Readable) ---'),
     draw_tree(Tree, human),
     
-    writeln('\n--- SOLUTION FOUND (Raw Prolog Object) ---'),
+    log(info, '--- SOLUTION FOUND (Raw Prolog Object) ---'),
     draw_tree(Tree, raw).
 
 
