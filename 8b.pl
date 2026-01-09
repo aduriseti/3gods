@@ -272,22 +272,40 @@ init_distinct_generator :-
 % Generates the universe of distinct questions up to MaxComplexity
 generate_universe(NumPos, MaxComplexity, CanonicalFamilies, NumQs) :-
     init_distinct_generator,
+
+    length(CanonicalFamilies, NumFamilies),
+    MaxQuestions is ceil((3^NumFamilies) / 2),
+    log(info, 'Max distinct questions limit set to: ~w (ceil(3^~w / 2))', [MaxQuestions, NumFamilies]),
     
     % Complexity 0 (Base Cases)
     generate_base_cases(NumPos, BaseQuestions),
-    process_candidates(BaseQuestions, 0, NumQs, CanonicalFamilies),
+    process_candidates(BaseQuestions, 0, NumQs, CanonicalFamilies, MaxQuestions),
     
-    % Iterative Step
+    % Iterative Step - Run loop, catch failure or explicit stop
+    (   run_generation_loop(NumPos, MaxComplexity, NumQs, CanonicalFamilies, MaxQuestions)
+    ->  true
+    ;   true
+    ).
+
+run_generation_loop(NumPos, MaxComplexity, NumQs, CanonicalFamilies, MaxQuestions) :-
     between(1, MaxComplexity, C),
+    
+    % Check if we already hit the limit before generating complex candidates
+    predicate_property(distinct_q(_,_,_), number_of_clauses(CurrentCount)),
+    (   CurrentCount >= MaxQuestions
+    ->  log(info, 'Hit max question limit (~w). Stopping generation.', [MaxQuestions]),
+        !, fail % Cut choicepoints and FAIL the loop to exit
+    ;   true
+    ),
+
     generate_candidates_at_complexity(C, NumPos, Candidates),
     length(Candidates, NumCandidates),
     log(info, 'Generated ~w candidates at complexity ~w', [NumCandidates, C]),
-    process_candidates(Candidates, C, NumQs, CanonicalFamilies),
+    process_candidates(Candidates, C, NumQs, CanonicalFamilies, MaxQuestions),
     % get # of distinct questions so far
     predicate_property(distinct_q(_,_,_), number_of_clauses(N)),
     log(info, 'Distinct questions so far: ~w', [N]),
     fail. % Force loop through all complexities
-generate_universe(_, _, _, _).
 
 % Generates base case questions (Complexity 0)
 generate_base_cases(NumPos, Questions) :-
@@ -328,8 +346,13 @@ candidate_at_complexity(C, _, (Q1 xor Q2)) :-
     max_member(TargetSubC, [C1, C2]).
 
 % Processes a list of candidate questions: computes signatures and stores new ones.
-process_candidates([], _, _, _).
-process_candidates([Q|Rest], C, NumQs, Families) :-
+process_candidates([], _, _, _, _).
+process_candidates(_, _, _, _, MaxQuestions) :-
+    predicate_property(distinct_q(_,_,_), number_of_clauses(Count)),
+    Count >= MaxQuestions,
+    !,
+    log(debug, 'Max questions limit reached (~w). Pruning remaining candidates.', [MaxQuestions]).
+process_candidates([Q|Rest], C, NumQs, Families, MaxQuestions) :-
     % ... (comments about signature logic) ...
     get_evaluate_signature(Q, NumQs, Families, Sig),
     
@@ -344,7 +367,7 @@ process_candidates([Q|Rest], C, NumQs, Families) :-
         predicate_property(distinct_q(_,_,_), number_of_clauses(N)),
         log(debug, 'Distinct questions so far: ~w', [N])
     ),
-    process_candidates(Rest, C, NumQs, Families).
+    process_candidates(Rest, C, NumQs, Families, MaxQuestions).
 
 % Inverts a signature (List of answer sets) to check for symmetry.
 % Symmetry: Q splits families into (A, B). "not Q" splits into (B, A).
