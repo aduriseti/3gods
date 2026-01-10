@@ -26,6 +26,8 @@ test('Random signature for query_position_question(1, true) is [[fail, true]]') 
 
 :- end_tests(simple_signatures).
 
+:- begin_tests(two_god_signatures).
+
 test('TF World: Check signatures for all permutations of [Truly, Falsely]') :-
     NumPos = 2, NumQs = 1,
     Gods = [truly, falsely],
@@ -707,4 +709,3 @@ test('3 Gods (T,F,R) is SOLVABLE with complexity 3 questions (3 questions deep)'
     )).
 
 :- end_tests(final_challenge).
-:- begin_tests(two_god_signatures).
