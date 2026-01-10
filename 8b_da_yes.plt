@@ -26,6 +26,66 @@ test('Random signature for query_position_question(1, true) is [[fail, true]]') 
 
 :- end_tests(simple_signatures).
 
+test('TF World: Check signatures for all permutations of [Truly, Falsely]') :-
+    NumPos = 2, NumQs = 1,
+    Gods = [truly, falsely],
+    
+    % 1. Generate ALL permutation families (TF and FT)
+    findall(F, generate_permutation_families(NumPos, Gods, F), Families),
+    
+    % 2. Calculate signatures for Question: "Is God 1 True?"
+    Q = query_position_question(1, true),
+    get_evaluate_signature(Q, NumQs, Families, Signatures),
+    
+    % 3. Verify the set of signatures is correct.
+    % TF ([T, F]): P1=T -> [true]
+    % FT ([F, T]): P1=F -> [fail]
+    % Expected signatures (unordered): [[true], [fail]]
+    sort(Signatures, SortedSigs),
+    assertion(SortedSigs == [[fail], [true]]).
+
+test('TR World: Check signatures for all permutations of [Truly, Random]') :-
+    NumPos = 2, NumQs = 1,
+    Gods = [truly, random],
+    
+    % 1. Generate ALL permutation families (TR and RT)
+    findall(F, generate_permutation_families(NumPos, Gods, F), Families),
+    
+    % 2. Calculate signatures for Question: "Is God 1 True?"
+    Q = query_position_question(1, true),
+    get_evaluate_signature(Q, NumQs, Families, Signatures),
+    
+    % 3. Verify signatures.
+    % TR ([T, R]): P1=T -> [true]
+    % RT ([R, T]): P1=R -> [fail, true] (Random)
+    % Expected signatures (unordered): [[true], [fail, true]]
+    sort(Signatures, SortedSigs),
+    Expected = [[true], [fail, true]],
+    sort(Expected, SortedExpected),
+    assertion(SortedSigs == SortedExpected).
+
+test('FR World: Check signatures for all permutations of [Falsely, Random]') :-
+    NumPos = 2, NumQs = 1,
+    Gods = [falsely, random],
+    
+    % 1. Generate ALL permutation families (FR and RF)
+    findall(F, generate_permutation_families(NumPos, Gods, F), Families),
+    
+    % 2. Calculate signatures for Question: "Is God 1 True?"
+    Q = query_position_question(1, true),
+    get_evaluate_signature(Q, NumQs, Families, Signatures),
+    
+    % 3. Verify signatures.
+    % FR ([F, R]): P1=F -> [fail]
+    % RF ([R, F]): P1=R -> [fail, true] (Random)
+    % Expected signatures (unordered): [[fail], [fail, true]]
+    sort(Signatures, SortedSigs),
+    Expected = [[fail], [fail, true]],
+    sort(Expected, SortedExpected),
+    assertion(SortedSigs == SortedExpected).
+
+:- end_tests(two_god_signatures).
+
 :- begin_tests(distinct_generation).
 
 test('Generate universe for complexity 1 and count distinct signatures') :-
@@ -647,3 +707,4 @@ test('3 Gods (T,F,R) is SOLVABLE with complexity 3 questions (3 questions deep)'
     )).
 
 :- end_tests(final_challenge).
+:- begin_tests(two_god_signatures).
