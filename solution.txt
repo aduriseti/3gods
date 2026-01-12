@@ -1,0 +1,60 @@
+
+Ask God 1: "If asked G1 'Is G2 random', say da"?
+/ (da)
+        Ask God 3: "If asked G3 'Is G1 random', say da"?
+        / (da)
+                Ask God 2: "If asked G2 'Is G2 truly', say da"?
+                / (da)
+  -> SOLVED
+                \ (ja)
+  -> SOLVED
+        \ (ja)
+                Ask God 1: "If asked G1 'Is G1 truly', say da"?
+                / (da)
+  -> SOLVED
+                \ (ja)
+  -> SOLVED
+\ (ja)
+        Ask God 2: "If asked G2 'Is G1 random', say da"?
+        / (da)
+                Ask God 2: "If asked G2 'Is G2 truly', say da"?
+                / (da)
+  -> SOLVED
+                \ (ja)
+  -> SOLVED
+        \ (ja)
+                Ask God 1: "If asked G1 'Is G1 truly', say da"?
+                / (da)
+  -> SOLVED
+                \ (ja)
+  -> SOLVED
+
+Ask God 1: "query_position_question(1,at_position_question(2,random))"?
+/ (da)
+        Ask God 3: "query_position_question(3,at_position_question(1,random))"?
+        / (da)
+                Ask God 2: "query_position_question(2,at_position_question(2,truly))"?
+                / (da)
+  -> SOLVED
+                \ (ja)
+  -> SOLVED
+        \ (ja)
+                Ask God 1: "query_position_question(1,at_position_question(1,truly))"?
+                / (da)
+  -> SOLVED
+                \ (ja)
+  -> SOLVED
+\ (ja)
+        Ask God 2: "query_position_question(2,at_position_question(1,random))"?
+        / (da)
+                Ask God 2: "query_position_question(2,at_position_question(2,truly))"?
+                / (da)
+  -> SOLVED
+                \ (ja)
+  -> SOLVED
+        \ (ja)
+                Ask God 1: "query_position_question(1,at_position_question(1,truly))"?
+                / (da)
+  -> SOLVED
+                \ (ja)
+  -> SOLVED

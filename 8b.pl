@@ -177,6 +177,11 @@ fill_random_answer(God, _, _) :-
 
 :- dynamic allowed_languages/1.
 
+generate_worlds_from_templates(Template, NumQs, AllowedLangs, w(PosList, Lang)) :-
+    generate_pos_list(Template, NumQs, PosList),
+    member(Lang, AllowedLangs).
+
+% Original generate_worlds_from_templates for backward compatibility/default behavior
 generate_worlds_from_templates(Template, NumQs, w(PosList, Lang)) :-
     generate_pos_list(Template, NumQs, PosList),
     (   allowed_languages(Langs)
@@ -208,7 +213,7 @@ get_answer_path_recursive(tree(q(Pos, Q), DaT, JaT), World, PathSoFar, [Ans|Rest
 % Calculates the set of all possible answer paths for a given family.
 get_family_signature_set(Tree, NumQs, Family, SignatureSet) :-
     % Find all possible worlds within this family
-    findall(W, generate_worlds_from_templates(Family, NumQs, W), Worlds),
+    findall(W, generate_worlds_from_templates(Family, NumQs, [da_yes, da_no], W), Worlds),
     % For each world, find the answer path, collecting them all
     findall(Path,
             (   member(World, Worlds),
@@ -372,31 +377,41 @@ process_candidates([Q|Rest], C, NumQs, Families, MaxQuestions) :-
 % Inverts a signature (List of answer sets) to check for symmetry.
 % Symmetry: Q splits families into (A, B). "not Q" splits into (B, A).
 % Since A, B partition the space, {A, B} is the same partition as {B, A}.
-invert_signature(Sig, InvSig) :-
-    maplist(invert_answer_set, Sig, InvSig).
+invert_signature(sig(Log, Utt), sig(InvLog, InvUtt)) :-
+    maplist(invert_answer_set, Log, InvLog),
+    maplist(invert_answer_set, Utt, InvUtt).
 
 invert_answer_set(Set, InvSet) :-
     maplist(invert_atom, Set, InvList),
     sort(InvList, InvSet).
 
+
 invert_atom(true, fail).
 invert_atom(fail, true).
+invert_atom(da, ja).
+invert_atom(ja, da).
 
 % Computes the signature of `evaluate(Q)` across all worlds in Families.
-% NEW: Computes FAMILY-LEVEL signature.
-% Sig is a list of [AnswerSet_F1, AnswerSet_F2, ...].
-% This collapses all Random world variations into a single {true, fail} set.
-get_evaluate_signature(Q, NumQs, Families, Sig) :-
-    maplist(get_family_eval_set(Q, NumQs), Families, Sig).
+% Returns sig(LogicalSig, UtteranceSig).
+get_evaluate_signature(Q, NumQs, Families, sig(LogicalSig, UtteranceSig)) :-
+    maplist(get_family_eval_set(Q, NumQs), Families, Pairs),
+    maplist(arg(1), Pairs, LogicalSig),
+    maplist(arg(2), Pairs, UtteranceSig).
 
 % Helper to get the set of unique answers a specific family gives to Q
-get_family_eval_set(Q, NumQs, Family, AnswerSet) :-
-    findall(Ans,
-            (   generate_worlds_from_templates(Family, NumQs, World),
-                ( evaluate(Q, [], World) -> Ans=true ; Ans=fail )
+get_family_eval_set(Q, NumQs, candidate(FamilyTemplate, AllowedLangs), pair(LogicalSet, UtteranceSet)) :-
+    findall(pair(Ans, Token),
+            (   generate_worlds_from_templates(FamilyTemplate, NumQs, AllowedLangs, World),
+                ( evaluate(Q, [], World) -> Ans=true ; Ans=fail ),
+                World = w(_, Lang),
+                get_utterance(Ans, Lang, Token)
             ),
-            RawAnswers),
-    sort(RawAnswers, AnswerSet). % Removes duplicates, e.g. [true, fail]
+            RawPairs),
+    % Split pairs into two lists
+    maplist(arg(1), RawPairs, LogRaw),
+    maplist(arg(2), RawPairs, UttRaw),
+    sort(LogRaw, LogicalSet),
+    sort(UttRaw, UtteranceSet).
 
 % evaluate_on_world removed as it is no longer used directly by maplist
 
@@ -418,6 +433,9 @@ my_nub([H | T], T2) :-
     memberchk(H, T),
     my_nub(T, T2).
 
+% Helper to wrap a FamilyTemplate into a candidate/2 term with default languages
+wrap_family_in_candidate(InitialLangs, FamilyTemplate, candidate(FamilyTemplate, InitialLangs)).
+
 is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, GeneratorGoal) :-
 
     % 1. Generate all family permutations (this may contain duplicates).
@@ -426,7 +444,8 @@ is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Gener
 
     % 2. Remove duplicates.
 
-    my_nub(FamiliesWithDuplicates, UniqueFamilies),
+    my_nub(FamiliesWithDuplicates, UniqueFamilyTemplates),
+    maplist(wrap_family_in_candidate([da_yes, da_no]), UniqueFamilyTemplates, UniqueFamilies),
 
     
 
@@ -451,12 +470,12 @@ is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Gener
 
 % --- Base Cases (use CurrentDepth) ---
 find_pruning_tree(_, _, _, _, _, [], leaf).
-find_pruning_tree(_, _, _, _, _, [_Family], leaf).
-find_pruning_tree(_, 0, _, _, _, Families, leaf) :- % Base case for depth
-    (length(Families, 1) -> true ; !, fail). % Ran out of depth
+find_pruning_tree(_, _, _, _, _, [_Candidate], leaf).
+find_pruning_tree(_, 0, _, _, _, Candidates, leaf) :- % Base case for depth
+    (length(Candidates, 1) -> true ; !, fail). % Ran out of depth
 
 % --- Recursive Pruning Step (Corrected) ---
-find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Families, tree(q(Pos, Q), DaTree, JaTree)) :-
+find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, tree(q(Pos, Q), DaTree, JaTree)) :-
     CurrentDepth > 0,
     NextDepth is CurrentDepth - 1,
 
@@ -465,20 +484,20 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
     distinct_question(MaxQComplexity, NumPos, TotalNumQs, CanonicalFamilies, q(Pos, Q)),
 
     % --- DEBUG: Print what we're trying ---
-    length(Families, FamilyCount),
-    log(debug, 'try(depth: ~w, q: ~w, families_in: ~w)', [CurrentDepth, q(Pos, Q), FamilyCount]),
+    length(Candidates, CandidateCount),
+    log(debug, 'try(depth: ~w, q: ~w, families_in: ~w)', [CurrentDepth, q(Pos, Q), CandidateCount]),
 
-    partition_families(Families, TotalNumQs, q(Pos, Q), DaFamilies, JaFamilies),
+    partition_families(Candidates, TotalNumQs, q(Pos, Q), DaCandidates, JaCandidates),
 
     % --- DEBUG: Print the result of the partition ---
-    length(DaFamilies, DaSize),
-    length(JaFamilies, JaSize),
+    length(DaCandidates, DaSize),
+    length(JaCandidates, JaSize),
     log(debug, 'partition(da_count: ~w, ja_count: ~w)', [DaSize, JaSize]),
 
     % --- Pruning Check 1: Useless Split (Corrected) ---
     % Succeeds only if the split is useful (neither side is empty).
-    dif(DaFamilies, []),
-    dif(JaFamilies, []),
+    dif(DaCandidates, []),
+    dif(JaCandidates, []),
 
     % --- Pruning Check 2: Sub-Problem Too Large (Corrected) ---
     % Succeeds only if the sub-problems are not too large. Allows backtracking on failure.
@@ -492,11 +511,11 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
     ),
 
     % If we get here, the question was good. No commit cut is needed.
-    log(debug, 'commit(q: ~w)', [q(Pos, Q)]),
+    log(info, 'commit(q: ~w)', [q(Pos, Q)]),
 
     % --- Recurse ---
-    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, DaFamilies, DaTree),
-    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, JaFamilies, JaTree).
+    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, DaCandidates, DaTree),
+    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, JaCandidates, JaTree).
 
 % --- Helpers required by the new algorithm ---
 
@@ -506,29 +525,48 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
 % This new partition_families is much smarter.
 % --- The Final, Corrected Partition Logic ---
 
-partition_families(Families, NumQs, QuestionNode, DaFamilies, JaFamilies) :-
-    % For each family, get its full signature set for this ONE question.
-    maplist(get_single_question_signature(QuestionNode, NumQs), Families, Signatures),
-    % writeln(debug_sigs(QuestionNode, Signatures)),
-
-    % Group families based on their signature for this question.
-    % FIX: If signature contains da, it goes to DaFamilies.
-    findall(F, (nth1(I, Families, F), nth1(I, Signatures, Sig), member(da, Sig)), DaFamilies),
-    % FIX: If signature contains ja, it goes to JaFamilies.
-    findall(F, (nth1(I, Families, F), nth1(I, Signatures, Sig), member(ja, Sig)), JaFamilies).
-
-% This helper calculates the full set of answers a family can give for a single question.
-get_single_question_signature(q(Pos, Q), NumQs, Family, SignatureSet) :-
-    findall(Ans,
-            (   generate_worlds_from_templates(Family, NumQs, World),
-                query_position(Pos, Q, [], World, Ans) % Returns da/ja
+partition_families(CandidatesIn, NumQs, QuestionNode, DaCandidates, JaCandidates) :-
+    % For each input candidate, try to refine it into a Da-branch candidate and a Ja-branch candidate
+    findall(DaC, 
+            (   member(Cand, CandidatesIn),
+                refine_candidate(QuestionNode, NumQs, Cand, da, DaC)
             ),
-            Answers),
-    sort(Answers, SignatureSet).
+            DaCandidates),
+    findall(JaC, 
+            (   member(Cand, CandidatesIn),
+                refine_candidate(QuestionNode, NumQs, Cand, ja, JaC)
+            ),
+            JaCandidates).
+
+% refine_candidate(QuestionNode, NumQs, CandidateIn, ExpectedAnswer, CandidateOut)
+% Takes an input candidate (FamilyTemplate, AllowedLangsIn) and an ExpectedAnswer (da/ja).
+% Returns CandidateOut (FamilyTemplate, AllowedLangsOut) if there are languages in AllowedLangsIn
+% consistent with the family giving ExpectedAnswer to QuestionNode. Otherwise, fails.
+refine_candidate(QuestionNode, NumQs, candidate(FamilyTemplate, AllowedLangsIn), ExpectedAnswer, candidate(FamilyTemplate, AllowedLangsOut)) :-
+    findall(Lang,
+            (   member(Lang, AllowedLangsIn),
+                % Check if the family, assuming 'Lang', can actually produce ExpectedAnswer
+                can_family_answer_with_lang(QuestionNode, NumQs, FamilyTemplate, Lang, ExpectedAnswer)
+            ),
+            AllowedLangsOut),
+    % Only succeed if there's at least one consistent language
+    AllowedLangsOut \= [].
+
+% can_family_answer_with_lang(QuestionNode, NumQs, FamilyTemplate, Language, ExpectedAnswer)
+% Succeeds if there exists a world within FamilyTemplate and Language where the family
+% gives the ExpectedAnswer to QuestionNode.
+can_family_answer_with_lang(QuestionNode, NumQs, FamilyTemplate, Language, ExpectedAnswer) :-
+    generate_worlds_from_templates(FamilyTemplate, NumQs, [Language], World),
+    get_single_world_answer(QuestionNode, NumQs, FamilyTemplate, World, Answer),
+    Answer == ExpectedAnswer.
+
+get_single_world_answer(q(Pos, Q), _NumQs, _FamilyTemplate, World, Answer) :-
+    query_position(Pos, Q, [], World, Answer).
+
 
 % Succeeds if a family can EVER produce 'Answer' (da/ja) for the given question.
-family_answers_question(q(Pos, Q), NumQs, Family, Answer) :-
-    generate_worlds_from_templates(Family, NumQs, World),
+family_answers_question(q(Pos, Q), NumQs, candidate(FamilyTemplate, AllowedLangs), Answer) :-
+    generate_worlds_from_templates(FamilyTemplate, NumQs, AllowedLangs, World),
     query_position(Pos, Q, [], World, Ans), % Returns da/ja
     Ans == Answer,
     !. % We only need to find one such world, not all of them.
