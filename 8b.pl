@@ -4,7 +4,7 @@ iamrunningthelatestversion.
 
 % --- Logging Infrastructure ---
 :- dynamic current_log_level/1.
-current_log_level(warning).
+current_log_level(info).
 
 level_value(debug, 10).
 level_value(info, 20).
@@ -436,6 +436,28 @@ my_nub([H | T], T2) :-
 % Helper to wrap a FamilyTemplate into a candidate/2 term with default languages
 wrap_family_in_candidate(InitialLangs, FamilyTemplate, candidate(FamilyTemplate, InitialLangs)).
 
+% --- Statistics for Pruning Ratio ---
+:- dynamic explored_stats/2. % explored_stats(Depth, Count)
+:- dynamic pruned_stats/2.   % pruned_stats(Depth, Count)
+
+init_stats :-
+    retractall(explored_stats(_, _)),
+    retractall(pruned_stats(_, _)).
+
+inc_explored(Depth) :-
+    (   retract(explored_stats(Depth, N))
+    ->  N1 is N + 1,
+        assertz(explored_stats(Depth, N1))
+    ;   assertz(explored_stats(Depth, 1))
+    ).
+
+inc_pruned(Depth) :-
+    (   retract(pruned_stats(Depth, N))
+    ->  N1 is N + 1,
+        assertz(pruned_stats(Depth, N1))
+    ;   assertz(pruned_stats(Depth, 1))
+    ).
+
 is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, GeneratorGoal) :-
 
     % 1. Generate all family permutations (this may contain duplicates).
@@ -463,6 +485,7 @@ is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Gener
 
     % 4. Call the recursive pruning solver.
 
+    init_stats,
     find_pruning_tree(NumQs, NumQs, QComplexity, NumPos, UniqueFamilies, UniqueFamilies, Tree).
 
 % --- The Recursive Solver (Corrected Signature) ---
@@ -482,6 +505,7 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
     % --- Generate Distinct Questions ---
     % Now we just pull from our precomputed universe.
     distinct_question(MaxQComplexity, NumPos, TotalNumQs, CanonicalFamilies, q(Pos, Q)),
+    inc_explored(CurrentDepth),
 
     % --- DEBUG: Print what we're trying ---
     length(Candidates, CandidateCount),
@@ -504,6 +528,7 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
     MaxSize is 2^NextDepth,
     (   ( DaSize > MaxSize ; JaSize > MaxSize )
     ->  % This branch is taken if the sub-problem is too big
+        inc_pruned(CurrentDepth),
         log(debug, 'prune(reason: sub-problem too large)'),
         fail % Just fail, allowing Prolog to backtrack to the 'between' loop
     ;   % This branch is taken if the check passes
@@ -657,7 +682,57 @@ solve_and_print_riddle :-
     draw_tree(Tree, human),
     
     log(info, '--- SOLUTION FOUND (Raw Prolog Object) ---'),
-    draw_tree(Tree, raw).
+    draw_tree(Tree, raw),
+
+    print_stats.
+
+print_stats :-
+    log(info, '--- SEARCH STATISTICS ---'),
+    log(info, 'Note: Tree Level 1 is the Root.'),
+
+    % Collect all depths (Budgets) that have activity
+    findall(D, (explored_stats(D, _) ; pruned_stats(D, _)), Depths),
+    sort(Depths, SortedBudgets),       % Ascending [1, 2, 3]
+    reverse(SortedBudgets, DescendingBudgets), % Descending [3, 2, 1]
+    
+    (   DescendingBudgets = [MaxBudget|_]
+    ->  true
+    ;   MaxBudget = 0
+    ),
+
+    % Header
+    log(info, 'Level | Explored | Pruned | Ratio'),
+    log(info, '-----------------------------------'),
+
+    forall(member(Budget, DescendingBudgets), print_level_stat(Budget, MaxBudget)),
+
+    % Totals
+    sum_explored(TotalExplored),
+    sum_pruned(TotalPruned),
+    (   TotalExplored > 0
+    ->  TotalRatio is TotalPruned / TotalExplored,
+        log(info, '-----------------------------------'),
+        log(info, 'TOTAL | ~w | ~w | ~w', [TotalExplored, TotalPruned, TotalRatio])
+    ;   true
+    ).
+
+print_level_stat(Budget, MaxBudget) :-
+    TreeLevel is MaxBudget - Budget + 1,
+    (explored_stats(Budget, E) -> Explored = E ; Explored = 0),
+    (pruned_stats(Budget, P) -> Pruned = P ; Pruned = 0),
+    (   Explored > 0
+    ->  Ratio is Pruned / Explored
+    ;   Ratio = 0.0
+    ),
+    log(info, '  ~w   |    ~w   |   ~w   | ~w', [TreeLevel, Explored, Pruned, Ratio]).
+
+sum_explored(Sum) :-
+    findall(C, explored_stats(_, C), Cs),
+    sum_list(Cs, Sum).
+
+sum_pruned(Sum) :-
+    findall(C, pruned_stats(_, C), Cs),
+    sum_list(Cs, Sum).
 
 
 % all_disjoint(ListOfSets)
