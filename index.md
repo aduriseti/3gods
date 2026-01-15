@@ -14,7 +14,8 @@ As soon as I heard about this puzzle, I had the idea that it might be interestin
 
 Really I needed to use some kind of logic programming method - and I decided to go with Prolog. Prolog is a declarative programming language (like SQL, or I guess TensorFlow v1?) as opposed to imperative programming languages like Python/C++/go/rust/etc... (also TensorFlow v2). What you do is specify known facts about the world (e.g. sky is blue, I am looking at the sky) and let Prolog's engine solve for unknowns (The color of the thing I am looking as is \_\_\_\_ --- and in this case Prolog would fill in `blue` for the blank). Here, our unknown that Prolog solves for would be the sequence of questions we use to solve this riddle.
 
-> <details markdown="1"> <summary> <b> <em> Click if have never seen Prolog before or need a refresher on its syntax. </em> </b> </summary>
+> <details markdown="1">
+> <summary> <b> <em> Click if have never seen Prolog before or need a refresher on its syntax. </em> </b> </summary>
 >
 > This Wikipedia section is a good intro to the language: <https://en.wikipedia.org/wiki/Prolog#Syntax_and_semantics>.
 > 
@@ -267,6 +268,7 @@ Eventually my girlfriend returned from visiting family and asked about whatever 
 We can say a question is useful if the different permutations of gods answer give a unique sequence of answers. Let's call this sequence the "logical signature" of a question. If we deduplicated on logical signature as we expanded our question grammar - we would end up producing $3^6=729$ questions - way less than $1e6$!
 
 Here are some logical signatures for a couple example questions when posed to the first god in front of us:
+
 |  | **God Permutation:** | `TFR` | `TRF` | `FTR` | `FRT` | `RTF` | `RFT` |
 | :---- | ----- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Question:** |  |  |  |  |  |  |  |
@@ -343,7 +345,8 @@ Third, I think solving this puzzle really pushes the limits of what is possible 
 I think that this could be as simple as converting the program to Datalog (<https://en.wikipedia.org/wiki/Datalog>), but it might be as involved as rewriting the solver in Z3 (<https://en.wikipedia.org/wiki/Z3_Theorem_Prover>). It also might not be possible - I don't think I'm using any SMT incompatible formulation (my question grammar is finite) but I might be wrong.
 
 ## Appendix
-<details> <summary>Click if you are curious about how my solution evolved over time</summary>
+<details markdown="1">
+<summary>Click if you are curious about how my solution evolved over time</summary>
 
 Here are some rough notes of my progress along with links to my solver in intermediate states.
 
@@ -384,3 +387,20 @@ Here are some rough notes of my progress along with links to my solver in interm
   - Fully solves the riddle
 
 </details>
+
+<script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']]
+    }
+  };
+</script>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true });
+</script>
