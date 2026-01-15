@@ -2,13 +2,13 @@
 
 Here's an easy and very simple riddle:
 
-> There are 3 gods in front of you, one who always answers Truly, one who always answers falsely, and one who always answers randomly. Your goal is to determine the identity of each god using 3 yes/no questions. Oh - and the gods answer in their own language although they understand English. So they will answer with "ja"/"da" - and you don't know which means "yes" and which means "no".
+> There are 3 gods in front of you, one who always answers Truly, one who always answers Falsely, and one who always answers Randomly. Your goal is to determine the identity of each god using 3 yes/no questions. Oh - and the gods answer in their own language although they understand English. So they will answer with "ja"/"da" - and you don't know which means "yes" and which means "no".
 
 Go on - take a few minutes to solve it (if the answer isn't obvious already).
 
 ...
 
-Ahh - don't feel too bad - I couldn't help myself. Figuring this one out took me lon\ger than I care to admit.  Famously - this is the so-called "Hardest Logic Puzzle Ever" (<https://en.wikipedia.org/wiki/The_Hardest_Logic_Puzzle_Ever>). If you want to solve this puzzle on your own, don't worry - keep reading - I'm not going to discuss any solutions. Instead, I will talk about my formal method of solving this problem with logic programming - which AFAIK no one has done before.
+Ahh - don't feel too bad - I couldn't help myself. Figuring this one out took me longer than I care to admit.  Famously - this is the so-called "Hardest Logic Puzzle Ever" (<https://en.wikipedia.org/wiki/The_Hardest_Logic_Puzzle_Ever>). If you want to solve this puzzle on your own, don't worry - keep reading - I'm not going to discuss any solutions. Instead, I will talk about my formal method of solving this problem with logic programming - which AFAIK no one has done before.
 
 I decided to go with Prolog. Prolog is a declarative programming language (like SQL, or I guess TensorFlow v1?) as opposed to imperative programming languages like Python/C++/go/rust/etc... (also TensorFlow v2). What you do is specify known facts about the world (e.g. sky is blue, I am looking at the sky) and let Prolog's engine solve for unknowns (The color of the thing I am looking as is \_\_\_\_ --- and in this case Prolog would fill in `blue` for the blank). Here, our unknown that Prolog solves for would be the sequence of questions we use to solve this riddle.
 
@@ -20,7 +20,7 @@ This Wikipedia section is a good intro to the language: <https://en.wikipedia.or
 
 If you don't want to read all that - here's a 2-minute crash course:
 
-<iframe src="https://swish.swi-prolog.org/?code=https://raw.githubusercontent.com/aduriseti/3gods/main/crash_course.pl" 
+<iframe src="https://swish.swi-prolog.org/?code=https://raw.githubusercontent.com/aduriseti/3gods/main/crash_course.pl&q=i_enjoy(Time)." 
         width="100%" 
         height="600px">
 </iframe>
@@ -28,7 +28,7 @@ If you don't want to read all that - here's a 2-minute crash course:
 </details>
 </blockquote>
 
-In this write-up I'll guide you through how I wrote this solver, roughly retracing the evolution of my implementation and thought process. I'll start by describing how to use logic programming to solve a much simpler problem. Then, I'll explain how to extend this approach to the full 3-gods problem. Finally, I'll explain necessary optimizations.
+In this write-up I'll guide you through how I wrote this solver, roughly retracing the evolution of my implementation and thought process. I'll start by describing how to use logic programming to solve a much simpler problem. Then, I'll discuss how to extend this approach to the full 3-gods problem. Finally, I'll explain necessary optimizations.
 
 * TOC
 {:toc}
@@ -36,7 +36,11 @@ In this write-up I'll guide you through how I wrote this solver, roughly retraci
 ## Knight or Knave
 *<https://en.wikipedia.org/wiki/Knights_and_Knaves>*
 
-Let's first see how we might use Prolog to solve a much simpler problem. Say there is a single god in front of us, who may be either the Truly or Falsely god - and we want to determine its identity in 1 question.  As a human - easy - just ask the god a trivially true question like "Is 1 == 1?". If they say yes - they are the Truly god - if they say no they are the Falsely god. For Prolog to discover this same question - we need:
+Let's first see how we might use Prolog to solve a much simpler problem.
+
+Say there is a single god in front of us, who may be either the Truly god (a Knight) or Falsely god (a Knave) - and we want to determine its identity in 1 question.  As a human - easy - just ask the god a trivially true question like "Is 1 == 1?". If they say yes - they are the Truly god - if they say no they are the Falsely god. 
+
+For Prolog to discover this same question - we need:
 1. Constraints defining the world (a single god, who may be of 2 different types, each of which who answer questions differently)
 2. Constraints on questions - here we define a grammar. For this world we only need the atomic trivially true question mentioned earlier, but we can also add some other grammar rules. For example, composition via `AND` and `OR` operators, etc... 
 3. Constraints on how questions are evaluated by our world. This is where we encode our objective - which is that our desired question can differentiate the possible worldstates (the god in front of us is Truly or Falsely).
@@ -108,7 +112,7 @@ is_distinguishing_question(Question, AnswerForTruly, AnswerForFalsely) :-
 
 You can play around with this simplified problem and its solution in the embedded playground below ([full screen](https://swish.swi-prolog.org/?code=https://raw.githubusercontent.com/aduriseti/3gods/main/knight_or_knave.pl&q=is_distinguishing_question(Q,_,_).)):
 
-<iframe src="https://swish.swi-prolog.org/?code=https://raw.githubusercontent.com/aduriseti/3gods/main/knight_or_knave.pl&q=is_distinguishing_question(Q,_,_)." 
+<iframe src="https://swish.swi-prolog.org/?code=https://raw.githubusercontent.com/aduriseti/3gods/main/knight_or_knave.pl&q=is_distinguishing_question(Question,_,_)." 
         width="100%" 
         height="600px">
 </iframe>
@@ -207,7 +211,7 @@ query_position(Position, Question, WorldState, Language, Utterance) :-
     get_utterance(LogicalAns, Language, Utterance).
 ```
 
-## Optimization
+## Necessary Optimizations
 
 ### Bounding question grammar complexity
 Now - if we were willing to wait infinitely long for our program to run, we would be done - but if you tried to solve the three gods puzzle with the Prolog program as described so far you would find it just hangs (possibly) indefinitely. This shouldn't be too surprising, after all, Prolog's engine uses naive depth first search and backtracking to explore our question grammar, which is unconstrained and allows for questions of arbitrary complexity.
@@ -299,7 +303,7 @@ For example, let's say we pick "Is 1==1?" as our starting question and ask it to
 
 So now in both the left and right subtree for this question, we have 6 permutations to distinguish with only 2 questions (a max of 4 is possible). Therefore, we can discard this question and all trees deriving from it.
 
-How effective is this pruning? I added some telemetry to my Prolog puzzle to analyze exploration/pruning statistics when solving the full riddle and found that we pruned all but a couple of questions at each level our question tree. One thing that surprised me is how few questions we actually explore at each depth level. We don't get anywhere close to exploring all 729 (although in practice its 365 because I use conjugate symmetry to cut down the question space) possible questions - which is probably why this problem is tractable at all in Prolog.
+How effective is this pruning? I added some telemetry to my Prolog puzzle to analyze exploration/pruning statistics when solving the full riddle and found that we pruned all but a couple of questions at each level our question tree. One thing that surprised me is how few questions we actually explore at each depth level. We don't get anywhere close to exploring all 729 possible questions (although in practice its 365 because I use conjugate symmetry to cut down the question space). Which - come to think of it - is probably why this problem is tractable at all in Prolog.
 ```txt
 │ INFO: --- SEARCH STATISTICS ---                                                                                                                                                                                                                                                                                    │
 │ INFO: Note: Tree Level 1 is the Root.                                                                                                                                                                                                                                                                              │
@@ -312,7 +316,7 @@ How effective is this pruning? I added some telemetry to my Prolog puzzle to ana
 │ INFO: TOTAL | 553 | 523 | 0.945750452079566
 ```
 
-I tried repeating this analysis for an unsolvable puzzle to get an idea of how many questions would be pruned if we fully explore our grammar - but what I found is that all questions would be instantly pruned for unsolvable problems. I do wonder if this optimization scales to different puzzles though - I could imagine an antagonistically constructed puzzle that causes the number of question trees passing this check to explode.
+I tried repeating this analysis for an unsolvable puzzle to get an idea of how many questions would be pruned if we fully explore our grammar - but what I found is that all questions would be instantly pruned for unsolvable problems. I do wonder if this optimization scales to different puzzles though - I could imagine an antagonistically constructed puzzle that causes the number of question trees passing this check to explode. Maybe an additional optimization or even an entirely different approach would be needed in this case.
 
 ## Solver Demo
 ***SPOILER WARNING!: Skip this section if you don't want the solution to the puzzle ruined!***
@@ -332,11 +336,11 @@ You can execute it in the playground below or use this [direct link](https://swi
 I have few ideas for future work.
 
 ### Solving this puzzle in 2 questions
-First, I think that it is probably possible to solve this puzzle in 2 questions if we allow paradoxical questions. These would be questions like - "Will you answer this question with something meaning "yes"?". Let's say the Falsely god answers with "no" (in the god's language) - well - then it told the truth and violated its nature. But if the god answers `yes` - it has also told the truth and violated its nature. So it is impossible for the Falsely god to answer this question and he must remain silent. 
+First, I think that it is probably possible to solve this puzzle in 2 questions if we allow paradoxical questions. These would be questions like - "Will you answer this question with something meaning "yes"?". Let's say the Falsely god answers with "no" (in the god's language) - well - then it told the truth and violated its nature. But if the god answers `yes` - it has also told the truth and violated its nature. So it is impossible for the Falsely god to answer this question and it must remain silent. 
 
 Since it is now possible to get three different responses to a question ("da"/"ja"/silence), in 2 questions we can now differentiate 9 worldstates - more than the 6 possible permutations of the gods. Or at least that's the idea.
 
-Someone explored this idea in [a paper](https://www.researchgate.net/publication/31366417_A_simple_solution_to_the_hardest_logic_puzzle_ever) and came to the same conclusion as me. But there was a [later paper](https://www.researchgate.net/publication/225580608_Why_the_Hardest_Logic_Puzzle_Ever_Cannot_Be_Solved_in_Less_than_Three_Questions) which provided a proof for why this puzzle is unsolvable with 2 questions even with paradoxical questions allowed. Having read the proof - I'm unconvinced - but since I have the ability to exhaustively search the question grammar for this puzzle - this is something I can easily and conclusively verify.
+Someone explored this idea in [a paper](https://www.researchgate.net/publication/31366417_A_simple_solution_to_the_hardest_logic_puzzle_ever) and came to the same conclusion as me. But there was a [later paper](https://www.researchgate.net/publication/225580608_Why_the_Hardest_Logic_Puzzle_Ever_Cannot_Be_Solved_in_Less_than_Three_Questions) which provided a proof for why this puzzle is unsolvable with 2 questions even when using paradoxical questions. Having read the proof - I'm unconvinced - but since I have the ability to exhaustively search the question grammar for this puzzle - this is something I can easily and conclusively verify.
 
 ### Puzzle generation
 Second, I think we could create a grammar to produce new puzzles. A simple such grammar would be one with 2 rules
@@ -371,7 +375,7 @@ Here are some rough notes of my progress along with links to my solver in interm
   - Establishes approach of generating trees to partition families - but hangs when solving full complexity 3 gods problem
 - [7.pl](https://github.com/aduriseti/3gods/blob/main/7.pl)
   - Adds an early stopping condition to tree generation - where - if # of families we have to partition at any node in tree path is $> 2 ^ {\text{questions left}}$ - we early stop
-  - But it still hung
+  - Still hangs
 - [8.pl](https://github.com/aduriseti/3gods/blob/main/8.pl)
   - Added a bunch of testing to debug 7
   - Eventually realized that fully evaluating a question of the required complexity for our grammar is too expensive by itself - some back of envelope math gives 1M possible questions of complexity 2 (we know golden question has complexity 2)
@@ -388,7 +392,7 @@ Here are some rough notes of my progress along with links to my solver in interm
 - [8a.pl](https://github.com/aduriseti/3gods/blob/main/8a.pl)
   - The breakthrough step making grammar expansion efficient
   - Deduplicates questions by how they partition god permutations
-- [8b](https://github.com/aduriseti/3gods/blob/main/8b.pl)
+- [8b.pl](https://github.com/aduriseti/3gods/blob/main/8b.pl)
   - Support for ja/da language - also optimizes question deduplication
   - Fully solves the riddle
 

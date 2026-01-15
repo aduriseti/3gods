@@ -22,3 +22,4 @@
 {"rule":"WHITESPACE_RULE","sentence":"^\\Qda da da da either either\\E$"}
 {"rule":"UPPERCASE_SENTENCE_START","sentence":"^\\Qda da da da either either\\E$"}
 {"rule":"ENGLISH_WORD_REPEAT_RULE","sentence":"^\\Qda da da da either either\\E$"}
+{"rule":"COMMA_COMPOUND_SENTENCE","sentence":"^\\QSo it is impossible for the Falsely god to answer this question and it must remain silent.\\E$"}
