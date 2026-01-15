@@ -1,0 +1,24 @@
+{"rule":"EVER_NN","sentence":"^\\QProlog Solves the Hardest Logic Puzzle Ever\nHere's an easy and very simple riddle:\\E$"}
+{"rule":"ENGLISH_WORD_REPEAT_BEGINNING_RULE","sentence":"^\\QFor example, composition via \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q and \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q operators, etc...\\E$"}
+{"rule":"LETS_LET","sentence":"^\\QBut that's a little boring - let's at least give our Prolog program a chance to fail and ask a useless question.\\E$"}
+{"rule":"A_RB_NN","sentence":"^\\QThe Falsely god - deceitfully - will also say yes.\\E$"}
+{"rule":"COMMA_COMPOUND_SENTENCE","sentence":"^\\QOh - and the gods answer in their own language although they understand English.\\E$"}
+{"rule":"NOUN_VERB_CONFUSION","sentence":"^\\QThis test below would consistently timeout:\\E$"}
+{"rule":"IF_OF","sentence":"^\\QSo I gave up a for a couple months.\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\QEven with our greatly reduced question domain - \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q is waaaaayyy too many question trees.\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\QSo we also implemented some tree pruning ensuring we stopped exploring trees when a subnode contained too many permutations to solve with our remaining questions.\\E$"}
+{"rule":"COMMA_COMPOUND_SENTENCE","sentence":"^\\QSo it is impossible for the Falsely god to answer this question and he must remain silent.\\E$"}
+{"rule":"EN_A_VS_AN","sentence":"^\\QIf we want to solve much harder problems (as discussed above), we would probably need to switch to a more powerful version of logic programming - specifically a SMT solver.\\E$"}
+{"rule":"WHITESPACE_RULE","sentence":"^\\QHere are some logical signatures for a couple example questions when posed to the first god in front of us: |  | God Permutation: | \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q | \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q | \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q | \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q | \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q | \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q | | :---- | ----- | :---: | :---: | :---: | :---: | :---: | :---: | | Question: |  |  |  |  |  |  |  | | Is 1==1?\\E$"}
+{"rule":"WHITESPACE_RULE","sentence":"^\\Q|  | either | either | either | either | either | either | | Is 1==0?\\E$"}
+{"rule":"WHITESPACE_RULE","sentence":"^\\Q|  | either | either | either | either | either | either | | If I asked \"is 1==1\"  would you answer da?\\E$"}
+{"rule":"WHITESPACE_RULE","sentence":"^\\Q|  | da | da | da | da | either | either  |\\E$"}
+{"rule":"WHITESPACE_RULE","sentence":"^\\QQuestion:              \nIs 1==1?\\E$"}
+{"rule":"WHITESPACE_RULE","sentence":"^\\QGod Permutation: \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q \\E(?:Dummy|Ina|Jimmy-)[0-9]+$"}
+{"rule":"WHITESPACE_RULE","sentence":"^\\Qeither either either either either either\nIs 1==0?\\E$"}
+{"rule":"PHRASE_REPETITION","sentence":"^\\Qeither either either either either either\nIs 1==0?\\E$"}
+{"rule":"WHITESPACE_RULE","sentence":"^\\Qeither either either either either either\nIf I asked \"is 1==1\"  would you answer da?\\E$"}
+{"rule":"PHRASE_REPETITION","sentence":"^\\Qeither either either either either either\nIf I asked \"is 1==1\"  would you answer da?\\E$"}
+{"rule":"WHITESPACE_RULE","sentence":"^\\Qda da da da either either\\E$"}
+{"rule":"UPPERCASE_SENTENCE_START","sentence":"^\\Qda da da da either either\\E$"}
+{"rule":"ENGLISH_WORD_REPEAT_RULE","sentence":"^\\Qda da da da either either\\E$"}
