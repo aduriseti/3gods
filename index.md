@@ -2,27 +2,25 @@
 
 Here's an easy and very simple riddle:
 
-"There are 3 gods in front of you, one who always answers Truly, one who always answers falsely, and one who always answers randomly. Your goal is to determine the identity of each god using 3 yes/no questions. Oh - and the gods answer in their own language although they understand English. So they will answer with "ja"/"da" - and you don't know which means "yes" and which means "no"."
+> There are 3 gods in front of you, one who always answers Truly, one who always answers falsely, and one who always answers randomly. Your goal is to determine the identity of each god using 3 yes/no questions. Oh - and the gods answer in their own language although they understand English. So they will answer with "ja"/"da" - and you don't know which means "yes" and which means "no".
 
 Go on - take a few minutes to solve it (if the answer isn't obvious already).
 
 ...
 
-Ahh - don't feel too bad - I couldn't help myself. Figuring this one out took me longer than I care to admit.  Famously - this is the so-called "Hardest Logic Puzzle Ever" (<https://en.wikipedia.org/wiki/The_Hardest_Logic_Puzzle_Ever>). If you want to solve this puzzle on your own, don't worry - keep reading - I'm not going to discuss any solutions. Instead, I will talk about my formal method of solving this problem with logic programming - which AFAIK no one has done before.
+Ahh - don't feel too bad - I couldn't help myself. Figuring this one out took me lon\ger than I care to admit.  Famously - this is the so-called "Hardest Logic Puzzle Ever" (<https://en.wikipedia.org/wiki/The_Hardest_Logic_Puzzle_Ever>). If you want to solve this puzzle on your own, don't worry - keep reading - I'm not going to discuss any solutions. Instead, I will talk about my formal method of solving this problem with logic programming - which AFAIK no one has done before.
 
-As soon as I heard about this puzzle, I had the idea that it might be interesting to solve this problem rigorously. I spent a little time trying to solve it with boolean algebra (someone wrote a [paper](https://www.researchgate.net/publication/339489184_Solving_Knights-and-Knaves_with_One_Equation) doing just this) - but I just couldn't quite make it work. Once I had an objective in mind (say - determining the identity of a particular god), I was able to write a system of equations and plug them into Mathematica to produce a question that allowed me to achieve my objective, but I wasn't able to formalize the process of arriving at an objective. And then I had absolutely no idea how to further extend this approach to handle branching logic and question trees.
-
-Really I needed to use some kind of logic programming method - and I decided to go with Prolog. Prolog is a declarative programming language (like SQL, or I guess TensorFlow v1?) as opposed to imperative programming languages like Python/C++/go/rust/etc... (also TensorFlow v2). What you do is specify known facts about the world (e.g. sky is blue, I am looking at the sky) and let Prolog's engine solve for unknowns (The color of the thing I am looking as is \_\_\_\_ --- and in this case Prolog would fill in `blue` for the blank). Here, our unknown that Prolog solves for would be the sequence of questions we use to solve this riddle.
+I decided to go with Prolog. Prolog is a declarative programming language (like SQL, or I guess TensorFlow v1?) as opposed to imperative programming languages like Python/C++/go/rust/etc... (also TensorFlow v2). What you do is specify known facts about the world (e.g. sky is blue, I am looking at the sky) and let Prolog's engine solve for unknowns (The color of the thing I am looking as is \_\_\_\_ --- and in this case Prolog would fill in `blue` for the blank). Here, our unknown that Prolog solves for would be the sequence of questions we use to solve this riddle.
 
 <blockquote>
 <details markdown="1">
-<summary> <b> <em> Click if have never seen Prolog before or need a refresher on its syntax. </em> </b> </summary>
+<summary> <b> <em> Click if have never seen Prolog before or want a refresher on its syntax. </em> </b> </summary>
 
 This Wikipedia section is a good intro to the language: <https://en.wikipedia.org/wiki/Prolog#Syntax_and_semantics>.
 
 If you don't want to read all that - here's a 2-minute crash course:
 
-<iframe src="https://swish.swi-prolog.org/?code=https://raw.githubusercontent.com/aduriseti/3gods/main/crash_course.pl&q=i_enjoy(Time)." 
+<iframe src="https://swish.swi-prolog.org/?code=https://raw.githubusercontent.com/aduriseti/3gods/main/crash_course.pl" 
         width="100%" 
         height="600px">
 </iframe>
@@ -32,7 +30,6 @@ If you don't want to read all that - here's a 2-minute crash course:
 
 In this write-up I'll guide you through how I wrote this solver, roughly retracing the evolution of my implementation and thought process. I'll start by describing how to use logic programming to solve a much simpler problem. Then, I'll explain how to extend this approach to the full 3-gods problem. Finally, I'll explain necessary optimizations.
 
-## Table of Contents
 * TOC
 {:toc}
 
@@ -42,7 +39,7 @@ In this write-up I'll guide you through how I wrote this solver, roughly retraci
 Let's first see how we might use Prolog to solve a much simpler problem. Say there is a single god in front of us, who may be either the Truly or Falsely god - and we want to determine its identity in 1 question.  As a human - easy - just ask the god a trivially true question like "Is 1 == 1?". If they say yes - they are the Truly god - if they say no they are the Falsely god. For Prolog to discover this same question - we need:
 1. Constraints defining the world (a single god, who may be of 2 different types, each of which who answer questions differently)
 2. Constraints on questions - here we define a grammar. For this world we only need the atomic trivially true question mentioned earlier, but we can also add some other grammar rules. For example, composition via `AND` and `OR` operators, etc... 
-3. Constraints on how questions are evaluated by our world. This is where we encode our objective - which is that our desired question can differentiate the possible worldstates. Or - in other words - that when we pose our question to the god in front of us, it yields different responses when the god is Truly vs. when the god is Falsely.
+3. Constraints on how questions are evaluated by our world. This is where we encode our objective - which is that our desired question can differentiate the possible worldstates (the god in front of us is Truly or Falsely).
 
 What does this actually look like?
 
@@ -54,7 +51,9 @@ is_position(a).
 is_god(truly).
 is_god(falsely).
 
-at_position(Pos, God, WorldState) :- is_position(Pos), is_god(WorldState).
+at_position(Pos, God, WorldState) :-
+  is_position(Pos),
+  is_god(WorldState).
 ```
 
 Similarly, our question grammar can be very simple. We only need an "atomic" true question - which we can imagine as "Is 1==1?" or some other axiomatic statement. But that's a little boring - let's at least give our Prolog program a chance to fail and ask a useless question. For example - "Will the god at position `a` answer the question "1==1" with yes?". The Truly - god - truthfully - will say yes. The Falsely god - deceitfully - will also say yes.
@@ -63,7 +62,9 @@ Similarly, our question grammar can be very simple. We only need an "atomic" tru
 is_question(true).
 
 % Questions about how gods at positions might respond to questions are allowed.
-is_question(query_position_question(Pos, Q)) :- is_position(Pos), is_question(Q).
+is_question(query_position_question(Pos, Question)) :-
+  is_position(Pos),
+  is_question(Question).
 ```
 
 This question grammar requires a corresponding evaluation framework - for this we define an evaluation predicate `evaluate(Question, WorldState)`: 
@@ -72,7 +73,8 @@ This question grammar requires a corresponding evaluation framework - for this w
 evaluate(true, _) :- true.
 
 % (`query_position` is the predicate which evaluates the result of posing a question to a God. It is explained in more detail below - because we allow self-referential questions explaining this code creates a bootstrapping problem :O)
-evaluate(query_position_question(P, Q), WS) :- query_position(P, Q, WS).
+evaluate(query_position_question(Position, Question), WorldState) :-
+  query_position(Position, Question, WorldState).
 ```
 
 We encode the different behavior of the gods by how they evaluate questions - the Truly god returns the logical value of the proposition 
@@ -89,7 +91,8 @@ query(falsely, Question, WorldState) :-
 We also need a way to pose these questions to gods at a specific position:
 ```prolog
 query_position(Position, Question, WorldState) :- 
-        at_position(Position, God, WorldState), query(GodType, Question, WorldState).
+        at_position(Position, God, WorldState),
+        query(GodType, Question, WorldState).
 ```
 
 Finally, we can synthesize the constraints above with a predicate that forces the 2 possible worldstates (the god in front of you is Truly or Falsely) to give different responses for a question. If invoked with an unconstrained question this predicate will produce all distinguishing questions (you can cycle through all results with `;`).
@@ -128,7 +131,7 @@ query(random, _Question, Path, _WorldState, RndAnsList) :-
 
 <blockquote>
 <details markdown="1">
-<summary> <b> <em> Click for a digression on the nature of the Random god. </em> </b> </summary>
+<summary> <b> <em> Click for a discussion of alternate interpretations of the Random god. </em> </b> </summary>
 
 Note that this is not the only possible interpretation of how the random god answers questions. The original wording of this puzzle describes the behavior of the random god as:
 
@@ -261,7 +264,7 @@ I'm still a little surprised Prolog can't evaluate a million questions in 10 sec
 
 Now - it turns out we don't need $Q^2$ questions to solve this puzzle - $Q^1$ questions are fine. But one of my goals here was to make a more general solver for these types of puzzles. As a followup - for example - I might be interested in adding a puzzle grammar to find puzzles that can't be solved using $Q^1$ questions and instead require $Q^2$ or even $Q^3$ questions. So I think this is a problem that needs to be solved.
 
-This stumped me for a long time. I went down some truly labyrinthine rabbit holes trying to solve this. I didn't want to use heuristics to constrain my grammar. If I gave my solver a puzzle, and it couldn't find a solution - I wanted to be sure that a solution didn't exist, as opposed to wondering if my heuristic just pruned it. I had an interesting idea about co-generating less complex versions of the puzzle using a puzzle grammar - and then as I made my puzzles more complex using the grammar rules, I would only do so if I could find questions that ensured they remained solvable. I still think there's something useful there, but I couldn't make work. And - anyways work got busy. So I gave up a for a couple months.
+This stumped me for a long time - I went down some truly labyrinthine rabbit holes. I didn't want to use heuristics to constrain my grammar (although I did try). If this solver doesn't find a solution for a puzzle, I want to be sure that a solution doesn't exist, as opposed to wondering if my heuristic just pruned it. I had an interesting idea about co-generating puzzles and questions - this would allow me to find questions that "reduce" a puzzle to a union of more simple sub-puzzles. I still think there's something useful there, but I couldn't make it work. And - anyways work got busy. So I gave up a for a couple months.
 
 Eventually my girlfriend returned from visiting family and asked about whatever happened to my stupid little Prolog project. I was walking her through the approaches I tried and as we talked we began to think about what makes a useful question. And specifically how we could prevent our grammar from mindlessly composing useless questions with useless questions, creating a combinatorial explosion of useless questions. We realized (and I really do think we jointly came up with this idea) that the domain of "useful" questions for this puzzle world is fairly limited. We only have 6 possible permutations of gods, and each permutation can only answer a question one of 3 ways:
 1. ja
@@ -281,7 +284,7 @@ Here are some logical signatures for a couple example questions when posed to th
 
 Note that the signature for "Is 1==1?" is the same as the signature for "Is 1==0?" - and we would deduplicate these questions against each other when expanding our grammar.
 
-I found that not only did this greatly speed up question generation (we could produce all useful `Q^2` questions in less than 1 second) we could even produce every possible useful question using just `Q^3` questions! (And do so in less than 30 seconds.) So - in a sense - we were able to exhaustively search our question grammar despite it being infinite.
+I found that not only did this greatly speed up question generation (we could produce all useful $Q^2$ questions in less than 1 second) we could even produce every possible useful question using just $Q^3$ questions! (And do so in less than 30 seconds.) So - in a sense - we were able to exhaustively search our question grammar despite it being infinite.
 
 ### Early question tree pruning
 Now - there's one more optimization I implemented. You may remember that a full question tree for 3 questions has 7 nodes. Even with our greatly reduced question domain - $729^7$ is waaaaayyy too many question trees. So we also implemented some tree pruning ensuring we stopped exploring trees when a subnode contained too many permutations to solve with our remaining questions. 
@@ -391,9 +394,6 @@ Here are some rough notes of my progress along with links to my solver in interm
 
 </details>
 
-<script type="text/javascript" id="MathJax-script" async
-  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-</script>
 <script>
   window.MathJax = {
     tex: {
@@ -401,6 +401,9 @@ Here are some rough notes of my progress along with links to my solver in interm
       displayMath: [['$$', '$$'], ['\\[', '\\]']]
     }
   };
+</script>
+<script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
 </script>
 
 <script type="module">
