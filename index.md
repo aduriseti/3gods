@@ -14,20 +14,21 @@ As soon as I heard about this puzzle, I had the idea that it might be interestin
 
 Really I needed to use some kind of logic programming method - and I decided to go with Prolog. Prolog is a declarative programming language (like SQL, or I guess TensorFlow v1?) as opposed to imperative programming languages like Python/C++/go/rust/etc... (also TensorFlow v2). What you do is specify known facts about the world (e.g. sky is blue, I am looking at the sky) and let Prolog's engine solve for unknowns (The color of the thing I am looking as is \_\_\_\_ --- and in this case Prolog would fill in `blue` for the blank). Here, our unknown that Prolog solves for would be the sequence of questions we use to solve this riddle.
 
-> <details markdown="1">
-> <summary> <b> <em> Click if have never seen Prolog before or need a refresher on its syntax. </em> </b> </summary>
->
-> This Wikipedia section is a good intro to the language: <https://en.wikipedia.org/wiki/Prolog#Syntax_and_semantics>.
-> 
-> If you don't want to read all that - here's a 2-minute crash course:
-> 
-> <iframe src="https://swish.swi-prolog.org/?code=https://raw.githubusercontent.com/aduriseti/3gods/main/crash_course.pl&q=i_enjoy(Time)." 
->         width="100%" 
->         height="600px">
-> </iframe>
->
-> </details>
-<br>
+<blockquote>
+<details markdown="1">
+<summary> <b> <em> Click if have never seen Prolog before or need a refresher on its syntax. </em> </b> </summary>
+
+This Wikipedia section is a good intro to the language: <https://en.wikipedia.org/wiki/Prolog#Syntax_and_semantics>.
+
+If you don't want to read all that - here's a 2-minute crash course:
+
+<iframe src="https://swish.swi-prolog.org/?code=https://raw.githubusercontent.com/aduriseti/3gods/main/crash_course.pl&q=i_enjoy(Time)." 
+        width="100%" 
+        height="600px">
+</iframe>
+
+</details>
+</blockquote>
 
 In this write-up I'll guide you through how I wrote this solver, roughly retracing the evolution of my implementation and thought process. I'll start by describing how to use logic programming to solve a much simpler problem. Then, I'll explain how to extend this approach to the full 3-gods problem. Finally, I'll explain necessary optimizations.
 
@@ -125,22 +126,24 @@ query(random, _Question, Path, _WorldState, RndAnsList) :-
     Answer. % Succeeds if the Nth answer is 'true'
 ```
 
-> <details markdown="1"> <summary> <b> <em> Click for a digression on the nature of the Random god. </em> </b> </summary>
->
-> Note that this is not the only possible interpretation of how the random god answers questions. The original wording of this puzzle describes the behavior of the random god as:
->
-> > Three gods A, B, and C are called, in no particular order, True, False, and Random. True always speaks truly, False always speaks falsely, **but whether Random speaks truly or falsely is a completely random matter**.
->
-> In my implementation, I interpreted this as - the response of the random god is randomly "yes" or "no" (actually "ja" and "da"). However - another possible interpretation is that the Random god's response must be randomly true or false. The difference is subtle, but there are questions that can be posed for which is not possible to answer "no" either truly or falsely. An example would be the useless question earlier: "Would you answer the question "1==1" with yes?". For such questions, depending on your interpretation of the Random god, it may not be able to answer "no". In fact, if you assume that the Random gods answer must be either true or false, this puzzle is a lot easier and can even be answered in 2 questions (although you have to use paradoxical questions) - see [this paper](https://www.researchgate.net/publication/31366417_A_simple_solution_to_the_hardest_logic_puzzle_ever) for more details.
->
-> I decided to interpret this puzzle as:
->
-> > Three gods A, B, and C are called, in some order, ‘True’, ‘False’, and ‘Random’. True always speaks truly, False always speaks falsely, but **whether Random answers ‘ja’ or ‘da’ is a completely random matter**.
->
-> And therefore allow the random god to potentially answer questions neither truly nor falsely.
->
-> </details>
+<blockquote>
+<details markdown="1">
+<summary> <b> <em> Click for a digression on the nature of the Random god. </em> </b> </summary>
 
+Note that this is not the only possible interpretation of how the random god answers questions. The original wording of this puzzle describes the behavior of the random god as:
+
+> Three gods A, B, and C are called, in no particular order, True, False, and Random. True always speaks truly, False always speaks falsely, **but whether Random speaks truly or falsely is a completely random matter**.
+
+In my implementation, I interpreted this as - the response of the random god is randomly "yes" or "no" (actually "ja" and "da"). However - another possible interpretation is that the Random god's response must be randomly true or false. The difference is subtle, but there are questions that can be posed for which is not possible to answer "no" either truly or falsely. An example would be the useless question earlier: "Would you answer the question "1==1" with yes?". For such questions, depending on your interpretation of the Random god, it may not be able to answer "no". In fact, if you assume that the Random gods answer must be either true or false, this puzzle is a lot easier and can even be answered in 2 questions (although you have to use paradoxical questions) - see [this paper](https://www.researchgate.net/publication/31366417_A_simple_solution_to_the_hardest_logic_puzzle_ever) for more details.
+
+I decided to interpret this puzzle as:
+
+> Three gods A, B, and C are called, in some order, ‘True’, ‘False’, and ‘Random’. True always speaks truly, False always speaks falsely, but **whether Random answers ‘ja’ or ‘da’ is a completely random matter**.
+
+And therefore allow the random god to potentially answer questions neither truly nor falsely.
+
+</details>
+</blockquote>
 
 ### Multiple gods & questions
 Multiple gods is easy - we can just parameterize our `is_position` clause:
@@ -158,7 +161,7 @@ Note that if we are allowed multiple questions (3 for this puzzle), we don't jus
 
 Our goal in constructing this tree is that by the time we reach a leaf node (asked our last question), only a single possible worldstate (permutation of gods) will have been able to give the sequence of answers that navigates to this leaf node (e.g. "ja, da, da"). This process is illustrated below for some hypothetical questions and permutation partitions:
 
-```mermaid
+<pre class="mermaid">
 graph TD
     Root["All 6 Permutations<br>(TFR, TRF, FTR, FRT, RTF, RFT)"]
     Root -->|Q1: da| Left["{TRF, FRT, RTF, RFT}"]
@@ -185,7 +188,7 @@ graph TD
     %% Styling to make the leaf nodes pop
     classDef leaf fill:#ffcccc,stroke:#333,stroke-width:2px;
     class Sol1,Sol2,Sol3,Sol4,Sol5,Sol6,Sol7,Sol8 leaf;
-```
+</pre>
 
 ### Language of the gods
 Accommodating the language of the gods was the easiest extension - all it required was adding a translation layer to our predicate posing questions to gods where we map `fail/true` to "ja" and "da" based on a hidden language member of `WorldState`: 
