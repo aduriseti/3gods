@@ -8,15 +8,15 @@ Go on - take a few minutes to solve it (if the answer isn't obvious already).
 
 ...
 
-Ahh - don't feel too bad - I couldn't help myself. Figuring this one out took me longer than I care to admit.  Famously - this is the so-called "Hardest Logic Puzzle Ever" (https://en.wikipedia.org/wiki/The_Hardest_Logic_Puzzle_Ever). If you want to solve this puzzle on your own, don't worry - keep reading - I'm not going to discuss any solutions. Instead, I will talk about my formal method of solving this problem with logic programming - which AFAIK no one has done before.
+Ahh - don't feel too bad - I couldn't help myself. Figuring this one out took me longer than I care to admit.  Famously - this is the so-called "Hardest Logic Puzzle Ever" (<https://en.wikipedia.org/wiki/The_Hardest_Logic_Puzzle_Ever>). If you want to solve this puzzle on your own, don't worry - keep reading - I'm not going to discuss any solutions. Instead, I will talk about my formal method of solving this problem with logic programming - which AFAIK no one has done before.
 
 As soon as I heard about this puzzle, I had the idea that it might be interesting to solve this problem rigorously. I spent a little time trying to solve it with boolean algebra (someone wrote a [paper](https://www.researchgate.net/publication/339489184_Solving_Knights-and-Knaves_with_One_Equation) doing just this) - but I just couldn't quite make it work. Once I had an objective in mind (say - determining the identity of a particular god), I was able to write a system of equations and plug them into Mathematica to produce a question that allowed me to achieve my objective, but I wasn't able to formalize the process of arriving at an objective. And then I had absolutely no idea how to further extend this approach to handle branching logic and question trees.
 
 Really I needed to use some kind of logic programming method - and I decided to go with Prolog. Prolog is a declarative programming language (like SQL, or I guess TensorFlow v1?) as opposed to imperative programming languages like Python/C++/go/rust/etc... (also TensorFlow v2). What you do is specify known facts about the world (e.g. sky is blue, I am looking at the sky) and let Prolog's engine solve for unknowns (The color of the thing I am looking as is \_\_\_\_ --- and in this case Prolog would fill in `blue` for the blank). Here, our unknown that Prolog solves for would be the sequence of questions we use to solve this riddle.
 
-> <details> <summary> <b> <em> Click if have never seen Prolog before or need a refresher on its syntax. </em> </b> </summary>
+> <details markdown="1"> <summary> <b> <em> Click if have never seen Prolog before or need a refresher on its syntax. </em> </b> </summary>
 >
-> This Wikipedia section is a good intro to the language: https://en.wikipedia.org/wiki/Prolog#Syntax_and_semantics.
+> This Wikipedia section is a good intro to the language: <https://en.wikipedia.org/wiki/Prolog#Syntax_and_semantics>.
 > 
 > If you don't want to read all that - here's a 2-minute crash course:
 > 
@@ -35,7 +35,7 @@ In this write-up I'll guide you through how I wrote this solver, roughly retraci
 {:toc}
 
 ## Knight or Knave
-*https://en.wikipedia.org/wiki/Knights_and_Knaves*
+*<https://en.wikipedia.org/wiki/Knights_and_Knaves>*
 
 Let's first see how we might use Prolog to solve a much simpler problem. Say there is a single god in front of us, who may be either the Truly or Falsely god - and we want to determine its identity in 1 question.  As a human - easy - just ask the god a trivially true question like "Is 1 == 1?". If they say yes - they are the Truly god - if they say no they are the Falsely god. For Prolog to discover this same question - we need:
 1. Constraints defining the world (a single god, who may be of 2 different types, each of which who answer questions differently)
@@ -115,7 +115,7 @@ Ok - so how do we extend the approach above to the full 3-gods problem? Retracin
 3. The language of the gods ("ja"/"da")
 
 ### Random god
-Implementing the random god I accomplished by encoding all possible future answers of the random god into the worldstate. When we pose a question to a random god, instead of evaluating that question, we just look up a random answer from its set of predetermined random responses:
+Implementing the random god I accomplished by encoding all possible future answers of the random god into the worldstate. When we pose a question to a random god, instead of evaluating that question, we look up a random answer from its set of predetermined random responses:
 ```prolog
 query(random, _Question, Path, _WorldState, RndAnsList) :-
     length(Path, NumPreviousAnswers),
@@ -124,7 +124,7 @@ query(random, _Question, Path, _WorldState, RndAnsList) :-
     Answer. % Succeeds if the Nth answer is 'true'
 ```
 
-> <details> <summary> <b> <em> Click for a digression on the nature of the Random god. </em> </b> </summary>
+> <details markdown="1"> <summary> <b> <em> Click for a digression on the nature of the Random god. </em> </b> </summary>
 >
 > Note that this is not the only possible interpretation of how the random god answers questions. The original wording of this puzzle describes the behavior of the random god as:
 >
@@ -313,7 +313,7 @@ I think it's time to show off the solver.
 
 You can execute it in the playground below or use this [direct link](https://swish.swi-prolog.org/?code=https://raw.githubusercontent.com/aduriseti/3gods/main/final_solution.pl&q=solve_and_print_riddle.) to go to SWISH.
 
-*NOTE: sometimes the SWISH sandbox kills my solver because it is too heavy. If that happens just run it locally: https://www.swi-prolog.org/download/stable.*
+*NOTE: sometimes the SWISH sandbox kills my solver because it is too heavy. If that happens just run it locally: <https://www.swi-prolog.org/download/stable.>*
 
 <iframe src="https://swish.swi-prolog.org/?code=https://raw.githubusercontent.com/aduriseti/3gods/main/final_solution.pl&q=solve_and_print_riddle." 
         width="100%" 
@@ -340,10 +340,11 @@ Once we can search over the puzzle domain, we could look for and classify catego
 ### SMT solving
 Third, I think solving this puzzle really pushes the limits of what is possible in Prolog. If we want to solve much harder problems (as discussed above), we would probably need to switch to a more powerful version of logic programming - specifically a SMT solver.
 
-I think that this could be as simple as converting the program to Datalog (https://en.wikipedia.org/wiki/Datalog), but it might be as involved as rewriting the solver in Z3 (https://en.wikipedia.org/wiki/Z3_Theorem_Prover). It also might not be possible - I don't think I'm using any SMT incompatible formulation (my question grammar is finite) but I might be wrong.
+I think that this could be as simple as converting the program to Datalog (<https://en.wikipedia.org/wiki/Datalog>), but it might be as involved as rewriting the solver in Z3 (<https://en.wikipedia.org/wiki/Z3_Theorem_Prover>). It also might not be possible - I don't think I'm using any SMT incompatible formulation (my question grammar is finite) but I might be wrong.
 
 ## Appendix
 <details> <summary>Click if you are curious about how my solution evolved over time</summary>
+
 Here are some rough notes of my progress along with links to my solver in intermediate states.
 
 - [1.pl](https://github.com/aduriseti/3gods/blob/main/1.pl)
@@ -381,4 +382,5 @@ Here are some rough notes of my progress along with links to my solver in interm
 - [8b](https://github.com/aduriseti/3gods/blob/main/8b.pl)
   - Support for ja/da language - also optimizes question deduplication
   - Fully solves the riddle
+
 </details>
