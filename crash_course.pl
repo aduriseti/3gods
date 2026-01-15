@@ -17,7 +17,7 @@ the_color_of_the_sky_is(black, at_night).
 
 % The `:-` operator allows us to derive facts from other facts.
 % We can query for a time of day that we need a flashlight (night) w/:
-% `?- i_need_a_flashlight_at(T).` - this will fill in `T` with `night`.
+% `?- i_need_a_flashlight_at(T).` - this will unify `T` with `night`.
 i_need_a_flashlight_at(Time) :- the_color_of_the_sky_is(black, Time).
     
 % The OR operator is `;`.
@@ -27,6 +27,6 @@ i_can_see_at(Time) :-
 
 % The AND operator is `,`. The NOT operator is `\+`.
 its_too_early_for_me(at_morning).
-i_am_having_a_good_time_at(Time) :-
+i_enjoy(Time) :-
     i_can_see_at(Time),
     \+ its_too_early_for_me(Time).
