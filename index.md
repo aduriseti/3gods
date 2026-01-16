@@ -170,7 +170,7 @@ Our goal in constructing this tree is that by the time we reach a leaf node (ask
 
 <pre class="mermaid">
 graph TD
-    Root["All 6 Permutations<br>(TFR, TRF, FTR, FRT, RTF, RFT)"]
+    Root["All 6 Permutations {TFR, TRF, FTR, FRT, RTF, RFT}"]
     Root -->|Q1: da| Left["{TRF, FRT, RTF, RFT}"]
     Root -->|Q1: ja| Right["{TFR, FTR, RTF, RFT}"]
 
@@ -303,17 +303,17 @@ For example, let's say we pick "Is 1==1?" as our starting question and ask it to
 
 So now in both the left and right subtree for this question, we have 6 permutations to distinguish with only 2 questions (a max of 4 is possible). Therefore, we can discard this question and all trees deriving from it.
 
-```mermaid
+<pre class="mermaid">
 graph TD
-    Root["All 6 Permutations<br>(TFR, TRF, FTR, FRT, RTF, RFT)"]
+    Root["All 6 Permutations {TFR, TRF, FTR, FRT, RTF, RFT}"]
     Root -->|Q1: Is 1==1?| Decision{"Answer?"}
     
-    Decision -->|ja| LeftNode["Remaining: 6 Permutations<br>(TFR, TRF, FTR, FRT, RTF, RFT) &gt; Max distinguishable (4)"]
-    Decision -->|da| RightNode["Remaining: 6 Permutations<br>(TFR, TRF, FTR, FRT, RTF, RFT) &gt; Max distinguishable (4)"]
+    Decision -->|ja| LeftNode["Remaining: 6 Permutations {TFR, TRF, FTR, FRT, RTF, RFT} &gt; Max distinguishable (4)"]
+    Decision -->|da| RightNode["Remaining: 6 Permutations {TFR, TRF, FTR, FRT, RTF, RFT} &gt; Max distinguishable (4)"]
     
     classDef prune fill:#ffcccc,stroke:#f00,stroke-width:2px,stroke-dasharray: 5, 5;
     class LeftNode,RightNode prune;
-```
+</pre>
 
 How effective is this pruning? I added some telemetry to my Prolog puzzle to analyze exploration/pruning statistics when solving the full riddle and found that we pruned all but a couple of questions at each level our question tree. One thing that surprised me is how few questions we actually explore at each depth level. We don't get anywhere close to exploring all 729 possible questions (although in practice its 365 because I use conjugate symmetry to cut down the question space). Which - come to think of it - is probably why this problem is tractable at all in Prolog.
 ```txt
