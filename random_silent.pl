@@ -4,7 +4,7 @@ iamrunningthelatestversion.
 
 % --- Logging Infrastructure ---
 :- dynamic current_log_level/1.
-current_log_level(debug).
+current_log_level(info).
 
 level_value(debug, 10).
 level_value(info, 20).
@@ -499,10 +499,36 @@ is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Gener
 % --- The Recursive Solver (Corrected Signature) ---
 % Signature: find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, CanonicalFamilies, CurrentFamilies, Tree)
 
+% --- Ancestor Tracking ---
+:- dynamic current_ancestor/2.
+
+% Helper to manage the ancestor stack during recursion
+with_ancestor(Depth, Question, Goal) :-
+    asserta(current_ancestor(Depth, Question)),
+    (   call(Goal)
+    ->  retract(current_ancestor(Depth, Question))
+    ;   retract(current_ancestor(Depth, Question)),
+        fail
+    ).
+
+% --- Wrapper with Failure Logging ---
+find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, Tree) :-
+    length(Candidates, Len),
+    log(debug, 'Wrapper called at Depth ~w with ~w candidates', [CurrentDepth, Len]),
+    (   find_pruning_tree_worker(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, Tree)
+    ->  true
+    ;   length(Candidates, CandCount),
+        (CandCount > 0, CurrentDepth > 0
+        ->  log(debug, '[FAILURE] Node Failed at Depth ~w. Candidates: ~w', [CurrentDepth, CandCount])
+        ;   true
+        ),
+        fail
+    ).
+
 % --- Base Cases (use CurrentDepth) ---
-find_pruning_tree(_, _, _, _, _, [], leaf).
-find_pruning_tree(_, _, _, _, _, [_Candidate], leaf).
-find_pruning_tree(_, 0, _, _, _, Candidates, leaf) :- % Base case for depth
+find_pruning_tree_worker(_, _, _, _, _, [], leaf).
+find_pruning_tree_worker(_, _, _, _, _, [_Candidate], leaf).
+find_pruning_tree_worker(_, 0, _, _, _, Candidates, leaf) :- % Base case for depth
     (length(Candidates, 1) -> true ; !, fail). % Ran out of depth
 
 % --- Recursive Pruning Step (Corrected) ---
@@ -537,7 +563,7 @@ find_pruning_tree_worker(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, Canon
     (   ( DaSize > MaxSize ; JaSize > MaxSize ; SilentSize > MaxSize )
     ->  % This branch is taken if the sub-problem is too big
         inc_pruned(CurrentDepth),
-        log(debug, 'prune(reason: sub-problem too large)'),
+        log(debug, 'prune(reason: sub-problem too large [~w > ~w])', [max(DaSize, max(JaSize, SilentSize)), MaxSize]),
         fail % Just fail, allowing Prolog to backtrack to the 'between' loop
     ;   % This branch is taken if the check passes
         true
@@ -548,8 +574,11 @@ find_pruning_tree_worker(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, Canon
 
     % --- Recurse ---
     with_ancestor(CurrentDepth, q(Pos, Q), (
+        log(debug, 'Recursing to Da branch...'),
         find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, DaCandidates, DaTree),
+        log(debug, 'Recursing to Ja branch...'),
         find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, JaCandidates, JaTree),
+        log(debug, 'Recursing to Silent branch...'),
         find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, SilentCandidates, SilentTree)
     )).
 

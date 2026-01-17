@@ -1,7 +1,7 @@
 % :- use_module(library(lists)).
 :- use_module(library(plunit)).
 :- consult('random_silent.pl').
-:- assert(current_log_level(debug)).
+:- assert(current_log_level(info)).
 
 :- begin_tests(simple_signatures).
 
