@@ -1,0 +1,1697 @@
+Warning: /workspaces/3gods/random_silent.pl:596:
+Warning:    Clauses of find_pruning_tree_worker/7 are not together in the source-file
+Warning:    Earlier definition at /workspaces/3gods/random_silent.pl:580
+Warning:    Current predicate: with_ancestor/3
+Warning:    Use :- discontiguous find_pruning_tree_worker/7. to suppress this message
+Warning: /workspaces/3gods/random_silent.plt:622:
+Warning:    Redefined static procedure solve_and_print_riddle/0
+Warning:    Previously defined at /workspaces/3gods/random_silent.pl:769
+% PL-Unit: simple_signatures .... passed 0.015 sec
+% PL-Unit: two_god_signatures ... passed 0.001 sec
+% PL-Unit: distinct_generation INFO: Max distinct questions limit set to: 365 (ceil(3^6 / 2))
+INFO: Generated 330 candidates at complexity 1
+INFO: Distinct questions so far: 52
+distinct_count_comp1(52)
+Warning: /workspaces/3gods/random_silent.plt:80:
+	PL-Unit: Test Generate universe for complexity 1 and count distinct signatures: Test succeeded with choicepoint
+INFO: Max distinct questions limit set to: 365 (ceil(3^6 / 2))
+INFO: Generated 330 candidates at complexity 1
+INFO: Distinct questions so far: 52
+INFO: Generated 7938 candidates at complexity 2
+INFO: Distinct questions so far: 365
+distinct_count_comp2(365)
+Warning: /workspaces/3gods/random_silent.plt:89:
+	PL-Unit: Test Generate universe for complexity 2 and count distinct signatures: Test succeeded with choicepoint
+INFO: Max distinct questions limit set to: 365 (ceil(3^6 / 2))
+INFO: Generated 330 candidates at complexity 1
+INFO: Distinct questions so far: 52
+INFO: Generated 7938 candidates at complexity 2
+INFO: Distinct questions so far: 365
+INFO: Hit max question limit (365). Stopping generation.
+distinct_count_comp3(365)
+Warning: /workspaces/3gods/random_silent.plt:100:
+	PL-Unit: Test Generate universe for complexity 3 and count distinct signatures: Test succeeded with choicepoint
+ passed 2.695 sec
+% PL-Unit: signature_inversion .... passed 0.001 sec
+% PL-Unit: world_generation .
+Warning: /workspaces/3gods/random_silent.plt:137:
+	PL-Unit: Test fill_random_answer for "random" god creates a correct-length list: Test succeeded with choicepoint
+.... passed 0.001 sec
+% PL-Unit: disjoint_logic .......... passed 0.002 sec
+% PL-Unit: distinguishing_scenarios INFO: Generating universe of questions (MaxComplexity=0)...
+INFO: Max distinct questions limit set to: 5 (ceil(3^2 / 2))
+INFO: Universe generated. Distinct questions found: 2
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: --- FINAL SEARCH TELEMETRY ---
+[Level 1] E:2 P:2 Rate:100.00% ...
+.INFO: Generating universe of questions (MaxComplexity=0)...
+INFO: Max distinct questions limit set to: 1 (ceil(3^0 / 2))
+INFO: Universe generated. Distinct questions found: 1
+INFO: --- FINAL SEARCH TELEMETRY ---
+.INFO: Generating universe of questions (MaxComplexity=1)...
+INFO: Max distinct questions limit set to: 5 (ceil(3^2 / 2))
+INFO: Generated 14 candidates at complexity 1
+INFO: Distinct questions so far: 3
+INFO: Universe generated. Distinct questions found: 3
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: --- FINAL SEARCH TELEMETRY ---
+[Level 1] E:3 P:3 Rate:100.00% ...
+.INFO: Generating universe of questions (MaxComplexity=3)...
+INFO: Max distinct questions limit set to: 5 (ceil(3^2 / 2))
+INFO: Generated 14 candidates at complexity 1
+INFO: Distinct questions so far: 3
+INFO: Generated 16 candidates at complexity 2
+INFO: Distinct questions so far: 5
+INFO: Hit max question limit (5). Stopping generation.
+INFO: Universe generated. Distinct questions found: 5
+INFO: commit(q: q(1,true))
+INFO: commit(q: q(1,true))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,at_position_question(1,truly)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,true)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,query_position_question(1,true))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,(at_position_question(1,truly),query_position_question(1,true))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 2
+INFO: commit(q: q(1,at_position_question(1,truly)))
+INFO: commit(q: q(1,true))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,at_position_question(1,truly)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,true)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,query_position_question(1,true))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,(at_position_question(1,truly),query_position_question(1,true))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 50) ---
+[Level 1] E:2 P:0 Rate:0.00% Ask G1: Is G1 truly
+    [Level 2] E:10 P:0 Rate:0.00% Ask G1: (Is G1 truly AND If asked G1 'True', say da)
+        [Level 3] E:50 P:49 Rate:98.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 50) ---
+[Level 1] E:2 P:0 Rate:0.00% Ask G1: Is G1 truly
+    [Level 2] E:10 P:0 Rate:0.00% Ask G1: (Is G1 truly AND If asked G1 'True', say da)
+        [Level 3] E:50 P:50 Rate:100.00% ...
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,true)))
+INFO: commit(q: q(1,true))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,at_position_question(1,truly)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,true)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,query_position_question(1,true))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,(at_position_question(1,truly),query_position_question(1,true))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,query_position_question(1,true))))
+INFO: commit(q: q(1,true))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,at_position_question(1,truly)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,true)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,query_position_question(1,true))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,(at_position_question(1,truly),query_position_question(1,true))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 100) ---
+[Level 1] E:4 P:0 Rate:0.00% Ask G1: If asked G1 'If asked G1 'True', say da', say da
+    [Level 2] E:20 P:0 Rate:0.00% Ask G1: (Is G1 truly AND If asked G1 'True', say da)
+        [Level 3] E:100 P:99 Rate:99.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 100) ---
+[Level 1] E:4 P:0 Rate:0.00% Ask G1: If asked G1 'If asked G1 'True', say da', say da
+    [Level 2] E:20 P:0 Rate:0.00% Ask G1: (Is G1 truly AND If asked G1 'True', say da)
+        [Level 3] E:100 P:100 Rate:100.00% ...
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 2
+INFO: commit(q: q(1,(at_position_question(1,truly),query_position_question(1,true))))
+INFO: commit(q: q(1,true))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,at_position_question(1,truly)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,true)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,query_position_question(1,true))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,(at_position_question(1,truly),query_position_question(1,true))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 2
+INFO: [FAILURE] Node Failed at Depth 3. Candidates: 2
+INFO: --- FINAL SEARCH TELEMETRY ---
+[Level 1] E:5 P:0 Rate:0.00% ...
+    [Level 2] E:25 P:0 Rate:0.00% ...
+        [Level 3] E:125 P:125 Rate:100.00% ...
+INFO: Hit max question limit (5). Stopping generation.
+INFO: Universe generated. Distinct questions found: 5
+INFO: commit(q: q(1,true))
+INFO: commit(q: q(1,true))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,at_position_question(1,truly)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,true)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,query_position_question(1,true))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,(at_position_question(1,truly),query_position_question(1,true))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 2
+INFO: commit(q: q(1,at_position_question(1,truly)))
+INFO: commit(q: q(1,true))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,at_position_question(1,truly)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,true)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,query_position_question(1,true))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,(at_position_question(1,truly),query_position_question(1,true))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 50) ---
+[Level 1] E:2 P:0 Rate:0.00% Ask G1: Is G1 truly
+    [Level 2] E:10 P:0 Rate:0.00% Ask G1: (Is G1 truly AND If asked G1 'True', say da)
+        [Level 3] E:50 P:49 Rate:98.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 50) ---
+[Level 1] E:2 P:0 Rate:0.00% Ask G1: Is G1 truly
+    [Level 2] E:10 P:0 Rate:0.00% Ask G1: (Is G1 truly AND If asked G1 'True', say da)
+        [Level 3] E:50 P:50 Rate:100.00% ...
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,true)))
+INFO: commit(q: q(1,true))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,at_position_question(1,truly)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,true)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,query_position_question(1,true))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,(at_position_question(1,truly),query_position_question(1,true))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,query_position_question(1,true))))
+INFO: commit(q: q(1,true))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,at_position_question(1,truly)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,true)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,query_position_question(1,true))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,(at_position_question(1,truly),query_position_question(1,true))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 100) ---
+[Level 1] E:4 P:0 Rate:0.00% Ask G1: If asked G1 'If asked G1 'True', say da', say da
+    [Level 2] E:20 P:0 Rate:0.00% Ask G1: (Is G1 truly AND If asked G1 'True', say da)
+        [Level 3] E:100 P:99 Rate:99.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 100) ---
+[Level 1] E:4 P:0 Rate:0.00% Ask G1: If asked G1 'If asked G1 'True', say da', say da
+    [Level 2] E:20 P:0 Rate:0.00% Ask G1: (Is G1 truly AND If asked G1 'True', say da)
+        [Level 3] E:100 P:100 Rate:100.00% ...
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 2
+INFO: commit(q: q(1,(at_position_question(1,truly),query_position_question(1,true))))
+INFO: commit(q: q(1,true))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,at_position_question(1,truly)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,true)))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,query_position_question(1,query_position_question(1,true))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: commit(q: q(1,(at_position_question(1,truly),query_position_question(1,true))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 2
+INFO: [FAILURE] Node Failed at Depth 3. Candidates: 2
+INFO: --- FINAL SEARCH TELEMETRY ---
+[Level 1] E:5 P:0 Rate:0.00% ...
+    [Level 2] E:25 P:0 Rate:0.00% ...
+        [Level 3] E:125 P:125 Rate:100.00% ...
+.INFO: Generating universe of questions (MaxComplexity=1)...
+INFO: Max distinct questions limit set to: 365 (ceil(3^6 / 2))
+INFO: Generated 330 candidates at complexity 1
+INFO: Distinct questions so far: 52
+INFO: Universe generated. Distinct questions found: 52
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 50) ---
+[Level 1] E:50 P:49 Rate:98.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 50) ---
+[Level 1] E:50 P:50 Rate:100.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 100) ---
+[Level 1] E:100 P:99 Rate:99.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 100) ---
+[Level 1] E:100 P:100 Rate:100.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 150) ---
+[Level 1] E:150 P:149 Rate:99.33% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 150) ---
+[Level 1] E:150 P:150 Rate:100.00% ...
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 6
+INFO: --- FINAL SEARCH TELEMETRY ---
+[Level 1] E:156 P:156 Rate:100.00% ...
+. passed 3.336 sec
+% PL-Unit: pruning_logic .......
+Warning: /workspaces/3gods/random_silent.plt:344:
+	PL-Unit: Test partition: does NOT split [True, False] for simple Q (both in both): Test succeeded with choicepoint
+Warning: /workspaces/3gods/random_silent.plt:367:
+	PL-Unit: Test partition: does NOT split [True, Random] families for simple Q: Test succeeded with choicepoint
+Warning: /workspaces/3gods/random_silent.plt:386:
+	PL-Unit: Test partition: correctly splits [False, Random] families (da=True): Test succeeded with choicepoint
+.INFO: Testing Q: q(1,query_position_question(1,at_position_question(1,truly)))
+INFO: Split Result: Da=4, Ja=4
+.INFO: Max distinct questions limit set to: 5 (ceil(3^2 / 2))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+Warning: /workspaces/3gods/random_silent.plt:455:
+	PL-Unit: Test pruning_tree: FAILS for [True, False] with 1 simple question (ambiguous): Test succeeded with choicepoint
+INFO: Max distinct questions limit set to: 14 (ceil(3^3 / 2))
+INFO: Generated 52 candidates at complexity 1
+INFO: Distinct questions so far: 6
+INFO: Generated 62 candidates at complexity 2
+INFO: Distinct questions so far: 14
+INFO: commit(q: q(1,query_position_question(1,at_position_question(1,truly))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 3
+INFO: Hit max question limit (14). Stopping generation.
+INFO: commit(q: q(1,query_position_question(1,at_position_question(1,truly))))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 2
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 3
+.INFO: Max distinct questions limit set to: 5 (ceil(3^2 / 2))
+INFO: Generated 16 candidates at complexity 1
+INFO: Distinct questions so far: 4
+INFO: commit(q: q(1,query_position_question(1,at_position_question(1,truly))))
+Warning: /workspaces/3gods/random_silent.plt:483:
+	PL-Unit: Test pruning_tree: SUCCEEDS for a 2-position [Truly,Falsely] vs [Falsely,Truly] world with Complex Q: Test succeeded with choicepoint
+ passed 0.018 sec
+% PL-Unit: pigeonhole_prune_check INFO: Max distinct questions limit set to: 14 (ceil(3^3 / 2))
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 3
+. passed 0.001 sec
+% PL-Unit: complex_pruning_scenario INFO: Generating universe of questions (MaxComplexity=1)...
+INFO: Max distinct questions limit set to: 14 (ceil(3^3 / 2))
+INFO: Generated 60 candidates at complexity 1
+INFO: Distinct questions so far: 8
+INFO: Universe generated. Distinct questions found: 8
+INFO: [FAILURE] Node Failed at Depth 1. Candidates: 3
+INFO: --- FINAL SEARCH TELEMETRY ---
+[Level 1] E:24 P:21 Rate:87.50% ...
+.INFO: Generating universe of questions (MaxComplexity=1)...
+INFO: Max distinct questions limit set to: 14 (ceil(3^3 / 2))
+INFO: Generated 60 candidates at complexity 1
+INFO: Distinct questions so far: 8
+INFO: Universe generated. Distinct questions found: 8
+INFO: commit(q: q(1,query_position_question(2,true)))
+INFO: commit(q: q(1,query_position_question(3,true)))
+INFO: --- FINAL SEARCH TELEMETRY ---
+[Level 1] E:6 P:4 Rate:66.67% ...
+    [Level 2] E:7 P:4 Rate:57.14% ...
+Warning: /workspaces/3gods/random_silent.plt:561:
+	PL-Unit: Test pruning_tree: SUCCEEDS for a [T,T,F] problem with 2 questions: Test succeeded with choicepoint
+
+--- STARTING DEBUG TRACE FOR TTF SCENARIO ---
+Families to distinguish (count=6
+Families: [[pos(1,truly,_86154),pos(2,truly,_86168),pos(3,falsely,_86182)],[pos(1,truly,_86106),pos(2,falsely,_86120),pos(3,truly,_86134)],[pos(1,truly,_86058),pos(2,truly,_86072),pos(3,falsely,_86086)],[pos(1,truly,_86010),pos(2,falsely,_86024),pos(3,truly,_86038)],[pos(1,falsely,_85962),pos(2,truly,_85976),pos(3,truly,_85990)],[pos(1,falsely,_85914),pos(2,truly,_85928),pos(3,truly,_85942)]]
+UniqueFamilies:[candidate([pos(1,truly,_86058),pos(2,truly,_86072),pos(3,falsely,_86086)],[da_yes,da_no]),candidate([pos(1,truly,_86010),pos(2,falsely,_86024),pos(3,truly,_86038)],[da_yes,da_no]),candidate([pos(1,falsely,_85914),pos(2,truly,_85928),pos(3,truly,_85942)],[da_yes,da_no])]
+INFO: Max distinct questions limit set to: 14 (ceil(3^3 / 2))
+INFO: Generated 60 candidates at complexity 1
+INFO: Distinct questions so far: 8
+INFO: commit(q: q(1,query_position_question(2,true)))
+INFO: commit(q: q(1,query_position_question(3,true)))
+Warning: /workspaces/3gods/random_silent.plt:582:
+	PL-Unit: Test DEBUG TRACE for the [T,T,F] problem: Test succeeded with choicepoint
+ passed 0.013 sec
+% PL-Unit: final_challenge INFO: Searching for solution...
+INFO: Generating universe of questions (MaxComplexity=1)...
+INFO: Max distinct questions limit set to: 365 (ceil(3^6 / 2))
+INFO: Generated 330 candidates at complexity 1
+INFO: Distinct questions so far: 52
+INFO: Universe generated. Distinct questions found: 52
+INFO: commit(q: q(1,query_position_question(1,at_position_question(1,truly))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 50) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:50 P:49 Rate:98.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 50) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:50 P:50 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 100) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:100 P:99 Rate:99.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 100) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:100 P:100 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 150) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:150 P:149 Rate:99.33% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 150) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:150 P:150 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 4
+INFO: commit(q: q(1,query_position_question(1,at_position_question(2,random))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 200) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:200 P:199 Rate:99.50% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 200) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:200 P:200 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 250) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:250 P:249 Rate:99.60% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 250) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:250 P:250 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: commit(q: q(3,query_position_question(3,at_position_question(1,random))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 50) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:280 P:278 Rate:99.29% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:50 P:49 Rate:98.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 50) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:280 P:278 Rate:99.29% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:50 P:50 Rate:100.00% ...
+INFO: commit(q: q(2,query_position_question(2,at_position_question(2,truly))))
+INFO: commit(q: q(1,query_position_question(1,at_position_question(1,truly))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 300) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:300 P:297 Rate:99.00% ...
+        [Level 3] E:88 P:76 Rate:86.36% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 300) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:302 P:300 Rate:99.34% ...
+        [Level 3] E:88 P:76 Rate:86.36% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 350) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:350 P:346 Rate:98.86% ...
+        [Level 3] E:88 P:76 Rate:86.36% ...
+INFO: commit(q: q(2,query_position_question(2,at_position_question(1,random))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 100) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:351 P:347 Rate:98.86% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:100 P:87 Rate:87.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 100) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:351 P:347 Rate:98.86% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:112 P:100 Rate:89.29% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 150) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:351 P:347 Rate:98.86% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:150 P:137 Rate:91.33% ...
+INFO: commit(q: q(2,query_position_question(2,at_position_question(2,truly))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 150) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:351 P:347 Rate:98.86% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:171 P:150 Rate:87.72% ...
+INFO: commit(q: q(1,query_position_question(1,at_position_question(1,truly))))
+INFO: --- FINAL SEARCH TELEMETRY ---
+[Level 1] E:26 P:24 Rate:92.31% ...
+    [Level 2] E:351 P:347 Rate:98.86% ...
+        [Level 3] E:176 P:152 Rate:86.36% ...
+INFO: --- SOLUTION FOUND (Human Readable) ---
+
+Ask God 1: "If asked G1 'Is G2 random', say da"?
+/ (da)
+        Ask God 3: "If asked G3 'Is G1 random', say da"?
+        / (da)
+                Ask God 2: "If asked G2 'Is G2 truly', say da"?
+                / (da)
+  -> SOLVED
+                \ (ja)
+  -> SOLVED
+        \ (ja)
+                Ask God 1: "If asked G1 'Is G1 truly', say da"?
+                / (da)
+  -> SOLVED
+                \ (ja)
+  -> SOLVED
+\ (ja)
+        Ask God 2: "If asked G2 'Is G1 random', say da"?
+        / (da)
+                Ask God 2: "If asked G2 'Is G2 truly', say da"?
+                / (da)
+  -> SOLVED
+                \ (ja)
+  -> SOLVED
+        \ (ja)
+                Ask God 1: "If asked G1 'Is G1 truly', say da"?
+                / (da)
+  -> SOLVED
+                \ (ja)
+  -> SOLVED
+INFO: --- SOLUTION FOUND (Raw Prolog Object) ---
+
+Ask God 1: "query_position_question(1,at_position_question(2,random))"?
+/ (da)
+        Ask God 3: "query_position_question(3,at_position_question(1,random))"?
+        / (da)
+                Ask God 2: "query_position_question(2,at_position_question(2,truly))"?
+                / (da)
+  -> SOLVED
+                \ (ja)
+  -> SOLVED
+        \ (ja)
+                Ask God 1: "query_position_question(1,at_position_question(1,truly))"?
+                / (da)
+  -> SOLVED
+                \ (ja)
+  -> SOLVED
+\ (ja)
+        Ask God 2: "query_position_question(2,at_position_question(1,random))"?
+        / (da)
+                Ask God 2: "query_position_question(2,at_position_question(2,truly))"?
+                / (da)
+  -> SOLVED
+                \ (ja)
+  -> SOLVED
+        \ (ja)
+                Ask God 1: "query_position_question(1,at_position_question(1,truly))"?
+                / (da)
+  -> SOLVED
+                \ (ja)
+  -> SOLVED
+.INFO: Generating universe of questions (MaxComplexity=0)...
+INFO: Max distinct questions limit set to: 365 (ceil(3^6 / 2))
+INFO: Universe generated. Distinct questions found: 10
+INFO: [FAILURE] Node Failed at Depth 3. Candidates: 6
+INFO: --- FINAL SEARCH TELEMETRY ---
+[Level 1] E:30 P:30 Rate:100.00% ...
+    [Level 2] E:0 P:0 Rate:0.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+.INFO: Generating universe of questions (MaxComplexity=1)...
+INFO: Max distinct questions limit set to: 365 (ceil(3^6 / 2))
+INFO: Generated 330 candidates at complexity 1
+INFO: Distinct questions so far: 52
+INFO: Universe generated. Distinct questions found: 52
+INFO: commit(q: q(1,query_position_question(1,at_position_question(1,truly))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 50) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:50 P:49 Rate:98.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 50) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:50 P:50 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 100) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:100 P:99 Rate:99.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 100) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:100 P:100 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 150) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:150 P:149 Rate:99.33% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 150) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:150 P:150 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 4
+INFO: commit(q: q(1,query_position_question(1,at_position_question(2,random))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 200) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:200 P:199 Rate:99.50% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 200) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:200 P:200 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 250) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:250 P:249 Rate:99.60% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 250) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:250 P:250 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: commit(q: q(3,query_position_question(3,at_position_question(1,random))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 50) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:280 P:278 Rate:99.29% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:50 P:49 Rate:98.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 50) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:280 P:278 Rate:99.29% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:50 P:50 Rate:100.00% ...
+INFO: commit(q: q(2,query_position_question(2,at_position_question(2,truly))))
+INFO: commit(q: q(1,query_position_question(1,at_position_question(1,truly))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 300) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:300 P:297 Rate:99.00% ...
+        [Level 3] E:88 P:76 Rate:86.36% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 300) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:302 P:300 Rate:99.34% ...
+        [Level 3] E:88 P:76 Rate:86.36% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 350) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:350 P:346 Rate:98.86% ...
+        [Level 3] E:88 P:76 Rate:86.36% ...
+INFO: commit(q: q(2,query_position_question(2,at_position_question(1,random))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 100) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:351 P:347 Rate:98.86% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:100 P:87 Rate:87.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 100) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:351 P:347 Rate:98.86% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:112 P:100 Rate:89.29% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 150) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:351 P:347 Rate:98.86% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:150 P:137 Rate:91.33% ...
+INFO: commit(q: q(2,query_position_question(2,at_position_question(2,truly))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 150) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:351 P:347 Rate:98.86% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:171 P:150 Rate:87.72% ...
+INFO: commit(q: q(1,query_position_question(1,at_position_question(1,truly))))
+INFO: --- FINAL SEARCH TELEMETRY ---
+[Level 1] E:26 P:24 Rate:92.31% ...
+    [Level 2] E:351 P:347 Rate:98.86% ...
+        [Level 3] E:176 P:152 Rate:86.36% ...
+.INFO: Generating universe of questions (MaxComplexity=1)...
+INFO: Max distinct questions limit set to: 365 (ceil(3^6 / 2))
+INFO: Generated 330 candidates at complexity 1
+INFO: Distinct questions so far: 52
+INFO: Universe generated. Distinct questions found: 52
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 50) ---
+[Level 1] E:50 P:49 Rate:98.00% ...
+    [Level 2] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 50) ---
+[Level 1] E:50 P:50 Rate:100.00% ...
+    [Level 2] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 100) ---
+[Level 1] E:100 P:99 Rate:99.00% ...
+    [Level 2] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 100) ---
+[Level 1] E:100 P:100 Rate:100.00% ...
+    [Level 2] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 150) ---
+[Level 1] E:150 P:149 Rate:99.33% ...
+    [Level 2] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 150) ---
+[Level 1] E:150 P:150 Rate:100.00% ...
+    [Level 2] E:0 P:0 Rate:0.00% ...
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 6
+INFO: --- FINAL SEARCH TELEMETRY ---
+[Level 1] E:156 P:156 Rate:100.00% ...
+    [Level 2] E:0 P:0 Rate:0.00% ...
+.INFO: Generating universe of questions (MaxComplexity=2)...
+INFO: Max distinct questions limit set to: 365 (ceil(3^6 / 2))
+INFO: Generated 330 candidates at complexity 1
+INFO: Distinct questions so far: 52
+INFO: Generated 7938 candidates at complexity 2
+INFO: Distinct questions so far: 365
+INFO: Universe generated. Distinct questions found: 365
+INFO: commit(q: q(1,query_position_question(1,at_position_question(1,truly))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 50) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:50 P:49 Rate:98.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 50) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:50 P:50 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 100) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:100 P:99 Rate:99.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 100) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:100 P:100 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 150) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:150 P:149 Rate:99.33% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 150) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:150 P:150 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 200) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:200 P:199 Rate:99.50% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 200) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:200 P:200 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 250) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:250 P:249 Rate:99.60% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 250) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:250 P:250 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 300) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:300 P:299 Rate:99.67% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 300) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:300 P:300 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 350) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:350 P:349 Rate:99.71% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 350) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:350 P:350 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 400) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:400 P:399 Rate:99.75% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 400) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:400 P:400 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 450) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:450 P:449 Rate:99.78% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 450) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:450 P:450 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 500) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:500 P:499 Rate:99.80% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 500) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:500 P:500 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 550) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:550 P:549 Rate:99.82% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 550) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:550 P:550 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 600) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:600 P:599 Rate:99.83% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 600) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:600 P:600 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 650) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:650 P:649 Rate:99.85% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 650) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:650 P:650 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 700) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:700 P:699 Rate:99.86% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 700) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:700 P:700 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 750) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:750 P:749 Rate:99.87% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 750) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:750 P:750 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 800) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:800 P:799 Rate:99.88% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 800) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:800 P:800 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 850) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:850 P:849 Rate:99.88% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 850) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:850 P:850 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 900) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:900 P:899 Rate:99.89% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 900) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:900 P:900 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 950) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:950 P:949 Rate:99.89% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 950) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:950 P:950 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1000) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:1000 P:999 Rate:99.90% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1000) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:1000 P:1000 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1050) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:1050 P:1049 Rate:99.90% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1050) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:1050 P:1050 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 4
+INFO: commit(q: q(1,query_position_question(1,at_position_question(2,random))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1100) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1100 P:1099 Rate:99.91% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1100) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1100 P:1100 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1150) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1150 P:1149 Rate:99.91% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1150) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1150 P:1150 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1200) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1200 P:1199 Rate:99.92% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1200) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1200 P:1200 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1250) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1250 P:1249 Rate:99.92% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1250) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1250 P:1250 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1300) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1300 P:1299 Rate:99.92% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1300) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1300 P:1300 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1350) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1350 P:1349 Rate:99.93% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1350) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1350 P:1350 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1400) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1400 P:1399 Rate:99.93% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1400) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1400 P:1400 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1450) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1450 P:1449 Rate:99.93% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1450) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1450 P:1450 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1500) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1500 P:1499 Rate:99.93% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1500) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1500 P:1500 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1550) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1550 P:1549 Rate:99.94% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1550) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1550 P:1550 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1600) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1600 P:1599 Rate:99.94% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1600) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1600 P:1600 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1650) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1650 P:1649 Rate:99.94% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1650) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1650 P:1650 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1700) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1700 P:1699 Rate:99.94% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1700) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1700 P:1700 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1750) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1750 P:1749 Rate:99.94% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1750) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1750 P:1750 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1800) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1800 P:1799 Rate:99.94% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1800) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1800 P:1800 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: commit(q: q(3,query_position_question(3,at_position_question(1,random))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 50) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:50 P:49 Rate:98.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 50) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:50 P:50 Rate:100.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 100) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:100 P:99 Rate:99.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 100) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:100 P:100 Rate:100.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 150) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:150 P:149 Rate:99.33% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 150) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:150 P:150 Rate:100.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 200) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:200 P:199 Rate:99.50% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 200) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:200 P:200 Rate:100.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 250) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:250 P:249 Rate:99.60% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 250) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:250 P:250 Rate:100.00% ...
+INFO: --- FINAL SEARCH TELEMETRY ---
+[Level 1] E:26 P:24 Rate:92.31% ...
+    [Level 2] E:1845 P:1843 Rate:99.89% ...
+        [Level 3] E:258 P:257 Rate:99.61% ...
+ERROR: /workspaces/3gods/random_silent.plt:699:
+	test 3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep): time_limit_exceeded
+
+INFO: Generating universe of questions (MaxComplexity=3)...
+INFO: Max distinct questions limit set to: 365 (ceil(3^6 / 2))
+INFO: Generated 330 candidates at complexity 1
+INFO: Distinct questions so far: 52
+INFO: Generated 7938 candidates at complexity 2
+INFO: Distinct questions so far: 365
+INFO: Hit max question limit (365). Stopping generation.
+INFO: Universe generated. Distinct questions found: 365
+INFO: commit(q: q(1,query_position_question(1,at_position_question(1,truly))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 50) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:50 P:49 Rate:98.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 50) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:50 P:50 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 100) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:100 P:99 Rate:99.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 100) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:100 P:100 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 150) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:150 P:149 Rate:99.33% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 150) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:150 P:150 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 200) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:200 P:199 Rate:99.50% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 200) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:200 P:200 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 250) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:250 P:249 Rate:99.60% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 250) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:250 P:250 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 300) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:300 P:299 Rate:99.67% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 300) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:300 P:300 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 350) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:350 P:349 Rate:99.71% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 350) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:350 P:350 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 400) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:400 P:399 Rate:99.75% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 400) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:400 P:400 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 450) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:450 P:449 Rate:99.78% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 450) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:450 P:450 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 500) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:500 P:499 Rate:99.80% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 500) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:500 P:500 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 550) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:550 P:549 Rate:99.82% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 550) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:550 P:550 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 600) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:600 P:599 Rate:99.83% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 600) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:600 P:600 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 650) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:650 P:649 Rate:99.85% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 650) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:650 P:650 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 700) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:700 P:699 Rate:99.86% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 700) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:700 P:700 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 750) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:750 P:749 Rate:99.87% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 750) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:750 P:750 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 800) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:800 P:799 Rate:99.88% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 800) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:800 P:800 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 850) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:850 P:849 Rate:99.88% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 850) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:850 P:850 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 900) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:900 P:899 Rate:99.89% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 900) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:900 P:900 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 950) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:950 P:949 Rate:99.89% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 950) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:950 P:950 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1000) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:1000 P:999 Rate:99.90% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1000) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:1000 P:1000 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1050) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:1050 P:1049 Rate:99.90% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1050) ---
+[Level 1] E:14 P:13 Rate:92.86% Ask G1: If asked G1 'Is G1 truly', say da
+    [Level 2] E:1050 P:1050 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: [FAILURE] Node Failed at Depth 2. Candidates: 4
+INFO: commit(q: q(1,query_position_question(1,at_position_question(2,random))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1100) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1100 P:1099 Rate:99.91% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1100) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1100 P:1100 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1150) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1150 P:1149 Rate:99.91% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1150) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1150 P:1150 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1200) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1200 P:1199 Rate:99.92% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1200) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1200 P:1200 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1250) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1250 P:1249 Rate:99.92% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1250) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1250 P:1250 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1300) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1300 P:1299 Rate:99.92% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1300) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1300 P:1300 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1350) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1350 P:1349 Rate:99.93% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1350) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1350 P:1350 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1400) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1400 P:1399 Rate:99.93% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1400) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1400 P:1400 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1450) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1450 P:1449 Rate:99.93% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1450) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1450 P:1450 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1500) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1500 P:1499 Rate:99.93% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1500) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1500 P:1500 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1550) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1550 P:1549 Rate:99.94% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1550) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1550 P:1550 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1600) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1600 P:1599 Rate:99.94% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1600) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1600 P:1600 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1650) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1650 P:1649 Rate:99.94% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1650) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1650 P:1650 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1700) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1700 P:1699 Rate:99.94% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1700) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1700 P:1700 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1750) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1750 P:1749 Rate:99.94% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1750) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1750 P:1750 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1800) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1800 P:1799 Rate:99.94% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1800) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1800 P:1800 Rate:100.00% ...
+        [Level 3] E:0 P:0 Rate:0.00% ...
+INFO: commit(q: q(3,query_position_question(3,at_position_question(1,random))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 50) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:50 P:49 Rate:98.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 50) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:50 P:50 Rate:100.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 100) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:100 P:99 Rate:99.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 100) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:100 P:100 Rate:100.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 150) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:150 P:149 Rate:99.33% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 150) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:150 P:150 Rate:100.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 200) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:200 P:199 Rate:99.50% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 200) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:200 P:200 Rate:100.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 250) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:250 P:249 Rate:99.60% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 250) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:250 P:250 Rate:100.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 300) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:300 P:299 Rate:99.67% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 300) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:300 P:300 Rate:100.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 350) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:350 P:349 Rate:99.71% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 350) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:350 P:350 Rate:100.00% ...
+INFO: commit(q: q(2,query_position_question(2,at_position_question(2,truly))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 400) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1845 P:1843 Rate:99.89% Ask G3: If asked G3 'Is G1 random', say da
+        [Level 3] E:400 P:389 Rate:97.25% ...
+INFO: commit(q: q(1,query_position_question(1,at_position_question(1,truly))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1850) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1850 P:1847 Rate:99.84% ...
+        [Level 3] E:401 P:389 Rate:97.01% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1850) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1852 P:1850 Rate:99.89% ...
+        [Level 3] E:401 P:389 Rate:97.01% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1900) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1900 P:1897 Rate:99.84% ...
+        [Level 3] E:401 P:389 Rate:97.01% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1900) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1902 P:1900 Rate:99.89% ...
+        [Level 3] E:401 P:389 Rate:97.01% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 1950) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1950 P:1947 Rate:99.85% ...
+        [Level 3] E:401 P:389 Rate:97.01% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 1950) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:1952 P:1950 Rate:99.90% ...
+        [Level 3] E:401 P:389 Rate:97.01% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 2000) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2000 P:1997 Rate:99.85% ...
+        [Level 3] E:401 P:389 Rate:97.01% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 2000) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2002 P:2000 Rate:99.90% ...
+        [Level 3] E:401 P:389 Rate:97.01% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 2050) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2050 P:2047 Rate:99.85% ...
+        [Level 3] E:401 P:389 Rate:97.01% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 2050) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2052 P:2050 Rate:99.90% ...
+        [Level 3] E:401 P:389 Rate:97.01% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 2100) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2100 P:2097 Rate:99.86% ...
+        [Level 3] E:401 P:389 Rate:97.01% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 2100) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2102 P:2100 Rate:99.90% ...
+        [Level 3] E:401 P:389 Rate:97.01% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 2150) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2150 P:2147 Rate:99.86% ...
+        [Level 3] E:401 P:389 Rate:97.01% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 2150) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2152 P:2150 Rate:99.91% ...
+        [Level 3] E:401 P:389 Rate:97.01% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 2 reached 2200) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2200 P:2197 Rate:99.86% ...
+        [Level 3] E:401 P:389 Rate:97.01% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 2 reached 2200) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2202 P:2200 Rate:99.91% ...
+        [Level 3] E:401 P:389 Rate:97.01% ...
+INFO: commit(q: q(2,query_position_question(2,at_position_question(1,random))))
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 400) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2229 P:2225 Rate:99.82% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:412 P:400 Rate:97.09% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 450) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2229 P:2225 Rate:99.82% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:450 P:437 Rate:97.11% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 450) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2229 P:2225 Rate:99.82% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:462 P:450 Rate:97.40% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 500) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2229 P:2225 Rate:99.82% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:500 P:487 Rate:97.40% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 500) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2229 P:2225 Rate:99.82% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:512 P:500 Rate:97.66% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 550) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2229 P:2225 Rate:99.82% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:550 P:537 Rate:97.64% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 550) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2229 P:2225 Rate:99.82% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:562 P:550 Rate:97.86% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 600) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2229 P:2225 Rate:99.82% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:600 P:587 Rate:97.83% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 600) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2229 P:2225 Rate:99.82% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:612 P:600 Rate:98.04% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 650) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2229 P:2225 Rate:99.82% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:650 P:637 Rate:98.00% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 650) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2229 P:2225 Rate:99.82% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:662 P:650 Rate:98.19% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Explored at Depth 1 reached 700) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2229 P:2225 Rate:99.82% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:700 P:687 Rate:98.14% ...
+INFO: 
+INFO: --- SEARCH TELEMETRY (Trigger: Pruned at Depth 1 reached 700) ---
+[Level 1] E:26 P:24 Rate:92.31% Ask G1: If asked G1 'Is G2 random', say da
+    [Level 2] E:2229 P:2225 Rate:99.82% Ask G2: If asked G2 'Is G1 random', say da
+        [Level 3] E:712 P:700 Rate:98.31% ...
+INFO: --- FINAL SEARCH TELEMETRY ---
+[Level 1] E:26 P:24 Rate:92.31% ...
+    [Level 2] E:2229 P:2225 Rate:99.82% ...
+        [Level 3] E:725 P:712 Rate:98.21% ...
+ERROR: /workspaces/3gods/random_silent.plt:717:
+	test 3 Gods (T,F,R) is SOLVABLE with complexity 3 questions (3 questions deep): time_limit_exceeded
+
+**FAILED 236.809 sec
+% 2 tests failed
+% 58 tests passed
+ERROR: -g load_test_files([]), run_tests.: false

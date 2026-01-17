@@ -21,7 +21,8 @@ should_log(MsgLevel) :-
 log(Level, Message) :-
     (   should_log(Level)
     ->  upcase_atom(Level, UpperLevel),
-        format('~w: ~w~n', [UpperLevel, Message])
+        (Level == info -> Stream = user_error ; Stream = user_output),
+        format(Stream, '~w: ~w~n', [UpperLevel, Message])
     ;   true
     ).
 
@@ -29,7 +30,8 @@ log(Level, Format, Args) :-
     (   should_log(Level)
     ->  format(string(Msg), Format, Args),
         upcase_atom(Level, UpperLevel),
-        format('~w: ~s~n', [UpperLevel, Msg])
+        (Level == info -> Stream = user_error ; Stream = user_output),
+        format(Stream, '~w: ~s~n', [UpperLevel, Msg])
     ;   true
     ).
 
@@ -454,15 +456,73 @@ inc_explored(Depth) :-
     (   retract(explored_stats(Depth, N))
     ->  N1 is N + 1,
         assertz(explored_stats(Depth, N1))
-    ;   assertz(explored_stats(Depth, 1))
-    ).
+    ;   N1 = 1,
+        assertz(explored_stats(Depth, 1))
+    ),
+    (0 is N1 mod 500 -> print_progress_stat(Depth, N1, 'Explored') ; true).
 
 inc_pruned(Depth) :-
     (   retract(pruned_stats(Depth, N))
     ->  N1 is N + 1,
         assertz(pruned_stats(Depth, N1))
-    ;   assertz(pruned_stats(Depth, 1))
-    ).
+    ;   N1 = 1,
+        assertz(pruned_stats(Depth, 1))
+    ),
+    (0 is N1 mod 50 -> print_progress_stat(Depth, N1, 'Pruned') ; true).
+
+print_progress_stat(Depth, Count, Type) :-
+    % Only print periodically or if interesting
+    log(info, ''),
+    log(info, '--- SEARCH TELEMETRY (Trigger: ~w at Depth ~w reached ~w) ---', [Type, Depth, Count]),
+    
+    % Find max depth to start printing from (assuming max depth is TotalNumQs which isn't globally available, 
+    % so we just search for the highest ancestor or stat)
+    findall(D, (current_ancestor(D, _); explored_stats(D, _)), Depths),
+    (Depths = [] -> MaxD = 3 ; max_list(Depths, MaxD)),
+    
+    print_telemetry_tree(MaxD).
+
+print_telemetry_tree(0) :- !.
+print_telemetry_tree(D) :-
+    % Get stats for this level
+    get_stats_for_depth(D, Explored, Pruned, RatePct),
+    
+    % Check if there is an active ancestor at this level
+    (   current_ancestor(D, q(Pos, Q))
+    ->  render_question_short(Q, QStr),
+        format(string(NodeStr), "Ask G~w: ~s", [Pos, QStr])
+    ;   NodeStr = "..."
+    ),
+    
+    % Indentation based on depth (higher depth = closer to root = less indent? 
+    % Wait, usually Depth 3 is root, Depth 1 is leaf in this code.
+    % Let's invert for visualization: MaxD is root.)
+    
+    % Actually, in this code, TotalNumQs (e.g. 3) is Root Depth. 1 is Leaf.
+    % So we print from MaxD down to 1.
+    
+    findall(MD, (current_ancestor(MD, _); explored_stats(MD, _)), Depths),
+    (Depths = [] -> MaxTotal = 3 ; max_list(Depths, MaxTotal)),
+    DisplayLevel is MaxTotal - D + 1,
+
+    IndentLen is (MaxTotal - D) * 4, 
+    format(string(Indent), "~t~*|", [IndentLen]),
+    
+    % Format the stats line
+    format('~w[Level ~w] E:~w P:~w Rate:~2f% ~s~n', 
+           [Indent, DisplayLevel, Explored, Pruned, RatePct, NodeStr]),
+    
+    NextD is D - 1,
+    print_telemetry_tree(NextD).
+
+get_stats_for_depth(D, Explored, Pruned, RatePct) :-
+    (explored_stats(D, E) -> Explored = E ; Explored = 0),
+    (pruned_stats(D, P) -> Pruned = P ; Pruned = 0),
+    (   Explored > 0
+    ->  Rate is (Pruned / Explored) * 100
+    ;   Rate = 0.0
+    ),
+    RatePct = Rate.
 
 is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, GeneratorGoal) :-
 
@@ -492,19 +552,48 @@ is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Gener
     % 4. Call the recursive pruning solver.
 
     init_stats,
-    find_pruning_tree(NumQs, NumQs, QComplexity, NumPos, UniqueFamilies, UniqueFamilies, Tree).
+    setup_call_cleanup(
+        true,
+        find_pruning_tree(NumQs, NumQs, QComplexity, NumPos, UniqueFamilies, UniqueFamilies, Tree),
+        (
+            log(info, '--- FINAL SEARCH TELEMETRY ---'),
+            print_telemetry_tree(NumQs)
+        )
+    ).
 
 % --- The Recursive Solver (Corrected Signature) ---
 % Signature: find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, CanonicalFamilies, CurrentFamilies, Tree)
 
+% --- Wrapper with Failure Logging ---
+find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, Tree) :-
+    (   find_pruning_tree_worker(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, Tree)
+    ->  true
+    ;   length(Candidates, CandCount),
+        (CandCount > 0, CurrentDepth > 0
+        ->  log(info, '[FAILURE] Node Failed at Depth ~w. Candidates: ~w', [CurrentDepth, CandCount])
+        ;   true
+        ),
+        fail
+    ).
+
 % --- Base Cases (use CurrentDepth) ---
-find_pruning_tree(_, _, _, _, _, [], leaf).
-find_pruning_tree(_, _, _, _, _, [_Candidate], leaf).
-find_pruning_tree(_, 0, _, _, _, Candidates, leaf) :- % Base case for depth
+find_pruning_tree_worker(_, _, _, _, _, [], leaf).
+find_pruning_tree_worker(_, _, _, _, _, [_Candidate], leaf).
+find_pruning_tree_worker(_, 0, _, _, _, Candidates, leaf) :- % Base case for depth
     (length(Candidates, 1) -> true ; !, fail). % Ran out of depth
 
+:- dynamic current_ancestor/2.
+
+% Helper to manage the ancestor stack during recursion
+with_ancestor(Depth, Question, Goal) :-
+    setup_call_cleanup(
+        assertz(current_ancestor(Depth, Question)),
+        Goal,
+        retract(current_ancestor(Depth, Question))
+    ).
+
 % --- Recursive Pruning Step (Corrected) ---
-find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, tree(q(Pos, Q), DaTree, JaTree)) :-
+find_pruning_tree_worker(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, tree(q(Pos, Q), DaTree, JaTree)) :-
     CurrentDepth > 0,
     NextDepth is CurrentDepth - 1,
 
@@ -545,8 +634,10 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
     log(info, 'commit(q: ~w)', [q(Pos, Q)]),
 
     % --- Recurse ---
-    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, DaCandidates, DaTree),
-    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, JaCandidates, JaTree).
+    with_ancestor(CurrentDepth, q(Pos, Q), (
+        find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, DaCandidates, DaTree),
+        find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, JaCandidates, JaTree)
+    )).
 
 % --- Helpers required by the new algorithm ---
 
