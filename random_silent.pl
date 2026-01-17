@@ -108,13 +108,17 @@ get_utterance(fail, da_no, da).
 query_position(Position, Question, Path, w(PosList, Language), Utterance) :-
     % Find the specific pos(...) term for the given Position.
     member(pos(Position, GodType, RandomAnswer), PosList),
-    % Call the updated query/4 predicate to get Logical Result
-    ( query(GodType, Question, Path, w(PosList, Language), RandomAnswer)
-    -> LogicalAns = true
-    ;  LogicalAns = fail
-    ),
-    % Map Logical Result to Utterance based on Language
-    get_utterance(LogicalAns, Language, Utterance).
+    
+    (   (GodType == random, length(Path, N), Idx is N + 1, nth1(Idx, RandomAnswer, silent))
+    ->  Utterance = silent
+    ;   % Call the updated query/4 predicate to get Logical Result
+        ( query(GodType, Question, Path, w(PosList, Language), RandomAnswer)
+        -> LogicalAns = true
+        ;  LogicalAns = fail
+        ),
+        % Map Logical Result to Utterance based on Language
+        get_utterance(LogicalAns, Language, Utterance)
+    ).
 
 % --- The Grammar ---
 % Base Case 1: Trivial questions are allowed.
@@ -157,6 +161,7 @@ god_types([truly, random, falsely]).
 
 is_random_answer(true).
 is_random_answer(fail).
+is_random_answer(silent).
 
 % --- Family Generation ---
 
@@ -390,6 +395,7 @@ invert_atom(true, fail).
 invert_atom(fail, true).
 invert_atom(da, ja).
 invert_atom(ja, da).
+invert_atom(silent, silent).
 
 % Computes the signature of `evaluate(Q)` across all worlds in Families.
 % Returns sig(LogicalSig, UtteranceSig).

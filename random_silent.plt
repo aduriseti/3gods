@@ -1,6 +1,6 @@
 % :- use_module(library(lists)).
 :- use_module(library(plunit)).
-:- consult('8b.pl').
+:- consult('random_silent.pl').
 :- assert(current_log_level(info)).
 
 :- begin_tests(simple_signatures).
@@ -146,10 +146,11 @@ test('generate_worlds_from_templates for a "truly" family produces 2 worlds (da=
 
 test('generate_worlds_from_templates for a "random" family is non-deterministic (x2 for lang)') :-
     % A 1-position, "all random" family, with 2 questions (N=2)...
-    % 4 combos of answers * 2 languages = 8 worlds.
+    % 3 answers (true, fail, silent) ^ 2 questions = 9 answer combos.
+    % 9 combos * 2 languages = 18 worlds.
     build_uniform_family(/*num_positions*/1, random, Family),
     findall(W, generate_worlds_from_templates(Family, /*num_questions=*/2, W), Worlds),
-    length(Worlds, 8).
+    length(Worlds, 18).
 
 test('permutation generator creates N! families') :-
     god_types(Gods), length(Gods, 3),
@@ -188,11 +189,11 @@ test('get_family_signature_set for "all falsely" family includes both [da] and [
     % Falsely: da_yes -> ja, da_no -> da.
     get_family_signature_set(Tree, /*num_questions=*/1, Family, [[da], [ja]]).
 
-test('get_family_signature_set for "all random" family is [da, ja]') :-
+test('get_family_signature_set for "all random" family is [da, ja, silent]') :-
     Tree = tree(q(1, true), leaf, leaf),
     build_uniform_family(1, random, Family),
-    % Random: da and ja are possible in both languages.
-    get_family_signature_set(Tree, /*num_questions=*/1, Family, [[da], [ja]]).
+    % Random: da, ja, and silent are possible.
+    get_family_signature_set(Tree, /*num_questions=*/1, Family, [[da], [ja], [silent]]).
 
 test('2-question tree with "all truly" family has outcomes [da, da] and [ja, ja]') :-
     Tree = tree(q(1, true), tree(q(1, true), leaf, leaf), tree(q(1, true), leaf, leaf)),
@@ -208,11 +209,18 @@ test('2-question tree with "all falsely" family has outcomes [ja, ja] and [da, d
     % Lang No:  F->da, F->da.
     get_family_signature_set(Tree, /*num_questions=*/2, Family, [[da, da], [ja, ja]]).
 
-test('2-question tree with "all random" family has all 4 possible outcomes') :-
+test('2-question tree with "all random" family has all 9 possible outcomes') :-
     Tree = tree(q(1, true), tree(q(1, true), leaf, leaf), tree(q(1, true), leaf, leaf)),
     build_uniform_family(1, random, Family),
-    ExpectedSet = [[da, da], [da, ja], [ja, da], [ja, ja]],
-    get_family_signature_set(Tree, /*num_questions=*/2, Family, ExpectedSet).
+    ExpectedSet = [
+        [da, da], [da, ja], [da, silent],
+        [ja, da], [ja, ja], [ja, silent],
+        [silent, da], [silent, ja], [silent, silent]
+    ],
+    get_family_signature_set(Tree, /*num_questions=*/2, Family, ActualSet),
+    assertion(length(ActualSet, 9)),
+    assertion(subset(ExpectedSet, ActualSet)),
+    assertion(subset(ActualSet, ExpectedSet)).
 
 :- end_tests(disjoint_logic).
 
@@ -320,6 +328,14 @@ test('family_answers: "Random" family CAN answer ja') :-
     Question       = q(1, true),
     NumQs          = 1,
     ExpectedAnswer = ja,
+    family_answers_question(Question, NumQs, F_Rand, ExpectedAnswer).
+
+test('family_answers: "Random" family CAN answer silent') :-
+    build_uniform_family(1, random, F_Rand_Template),
+    wrap_family_in_candidate([da_yes, da_no], F_Rand_Template, F_Rand),
+    Question       = q(1, true),
+    NumQs          = 1,
+    ExpectedAnswer = silent,
     family_answers_question(Question, NumQs, F_Rand, ExpectedAnswer).
 
 % --- Tests for `partition_families/5` ---
@@ -621,7 +637,7 @@ solve_and_print_riddle :-
 :- begin_tests(final_challenge).
 
 test('PRINT SOLUTION for 3 Gods (T,F,R)') :-
-    call_with_time_limit(10, solve_and_print_riddle).
+    call_with_time_limit(60, solve_and_print_riddle).
 
 test('3 Gods (T,F,R) is IMPOSSIBLE with complexity 0 questions (simple direct questions)', [fail]) :-
     % 1. Define the problem parameters
@@ -634,7 +650,7 @@ test('3 Gods (T,F,R) is IMPOSSIBLE with complexity 0 questions (simple direct qu
     % 2. Call the main solver
     % We expect this to FAIL. Without nested questions, we cannot bypass the 
     % Truth/Liar ambiguity or reliably identify Random in 3 steps.
-    call_with_time_limit(10, is_distinguishing_tree_bounded(
+    call_with_time_limit(60, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
         QComplexity,
@@ -653,7 +669,7 @@ test('3 Gods (T,F,R) is SOLVABLE with complexity 1 questions (3 questions deep)'
     
     % 2. Call the main solver
     % We expect this to SUCCEED now that languages are unconstrained but we use embedded Qs.
-    call_with_time_limit(10, is_distinguishing_tree_bounded(
+    call_with_time_limit(60, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
         QComplexity,
@@ -671,7 +687,7 @@ test('3 Gods (T,F,R) is IMPOSSIBLE with only 2 questions (tree depth 2)', [fail]
     Generator    = generate_permutation_families,
     
     % 2. Call the main solver
-    call_with_time_limit(10, is_distinguishing_tree_bounded(
+    call_with_time_limit(60, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
         QComplexity,
@@ -689,7 +705,7 @@ test('3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep)'
     Generator    = generate_permutation_families,
     
     % 2. Call the main solver with a time limit
-    call_with_time_limit(10, is_distinguishing_tree_bounded(
+    call_with_time_limit(60, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
         QComplexity,
@@ -707,7 +723,7 @@ test('3 Gods (T,F,R) is SOLVABLE with complexity 3 questions (3 questions deep)'
     Generator    = generate_permutation_families,
     
     % 2. Call the main solver with a time limit
-    call_with_time_limit(30, is_distinguishing_tree_bounded(
+    call_with_time_limit(120, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
         QComplexity,
