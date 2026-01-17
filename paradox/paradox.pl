@@ -92,6 +92,139 @@ evaluate(query_position_question(Pos, SubQ), Path, WS) :-
 evaluate(true, _, _) :- true.
 evaluate(fail, _, _) :- fail.
 
+
+% =========================================================
+% 2. THE EVALUATOR: 3-State Logic (True, False, Paradox)
+% =========================================================
+
+% Performance Hack: Memoize results so we don't re-simulate identical questions
+:- table evaluate_3state/4.
+
+% evaluate_3state(+Question, +Path, +WorldState, -Result)
+% Result is one of: [true, false, paradox]
+
+% A. Logical AND (Kleene Strong Logic)
+evaluate_3state((Q1, Q2), Path, WS, Result) :-
+    evaluate_3state(Q1, Path, WS, R1),
+    evaluate_3state(Q2, Path, WS, R2),
+    logic_and_3state(R1, R2, Result).
+
+% B. Logical OR (Kleene Strong Logic)
+evaluate_3state((Q1 ; Q2), Path, WS, Result) :-
+    evaluate_3state(Q1, Path, WS, R1),
+    evaluate_3state(Q2, Path, WS, R2),
+    logic_or_3state(R1, R2, Result).
+
+% C. Logical XOR
+evaluate_3state((Q1 xor Q2), Path, WS, Result) :-
+    evaluate_3state(Q1, Path, WS, R1),
+    evaluate_3state(Q2, Path, WS, R2),
+    logic_xor_3state(R1, R2, Result).
+
+% D. Nested Questions (Handling Silence)
+evaluate_3state(query_position_question(Pos, SubQ), Path, WS, Result) :-
+    % query_position_3state now returns: da, ja, OR silent
+    query_position_3state(Pos, SubQ, Path, WS, Response),
+    (   Response == da -> Result = true
+    ;   Response == ja -> Result = false
+    ;   Response == silent -> Result = false 
+        % Logic: "Did he say 'da'?" -> No, he was silent. So the statement is False.
+    ).
+
+% E. Base Cases
+evaluate_3state(true, _, _, true).
+evaluate_3state(fail, _, _, false).
+evaluate_3state(at_position_question(P, G), _, WS, Result) :-
+    (at_position(P, G, WS) -> Result = true ; Result = false).
+
+% F. The Paradox Physics (Definitions)
+evaluate_3state(paradox_universal, _, _, paradox).
+evaluate_3state(paradox_falsely, _, _, paradox_falsely). % Pass token to God Logic
+evaluate_3state(paradox_truly, _, _, paradox_truly).     % Pass token to God Logic
+
+
+% =========================================================
+% 3. LOGIC TABLES (Kleene Strong Logic)
+% =========================================================
+
+% AND: False dominates Paradox
+logic_and_3state(true, true, true).
+logic_and_3state(true, false, false).
+logic_and_3state(true, paradox, paradox).
+logic_and_3state(false, _, false).       % Short-circuit
+logic_and_3state(paradox, true, paradox).
+logic_and_3state(paradox, false, false). % Strong Logic
+logic_and_3state(paradox, paradox, paradox).
+% Handle specialized paradox tokens as generic paradoxes for logic ops
+logic_and_3state(paradox_falsely, _, paradox). 
+logic_and_3state(_, paradox_falsely, paradox).
+logic_and_3state(paradox_truly, _, paradox).
+logic_and_3state(_, paradox_truly, paradox).
+
+% OR: True dominates Paradox
+logic_or_3state(true, _, true).          % Short-circuit
+logic_or_3state(false, false, false).
+logic_or_3state(false, true, true).
+logic_or_3state(false, paradox, paradox).
+logic_or_3state(paradox, true, true).    % Strong Logic
+logic_or_3state(paradox, false, paradox).
+logic_or_3state(paradox, paradox, paradox).
+logic_or_3state(paradox_falsely, _, paradox).
+logic_or_3state(_, paradox_falsely, paradox).
+
+% XOR
+logic_xor_3state(true, false, true).
+logic_xor_3state(false, true, true).
+logic_xor_3state(true, true, false).
+logic_xor_3state(false, false, false).
+logic_xor_3state(paradox, _, paradox).
+logic_xor_3state(_, paradox, paradox).
+
+
+% =========================================================
+% 4. GOD PSYCHOLOGY: Who Crashes?
+% =========================================================
+
+query_position_3state(Pos, Question, Path, w(PosList, Lang), Utterance) :-
+    member(pos(Pos, GodType, RndAnsOrList), PosList),
+    
+    log(debug, 'QPos3State: Pos=~w, God=~w, Q=~w', [Pos, GodType, Question]),
+
+    % 1. Evaluate Logic (Get True/False/Paradox)
+    evaluate_3state(Question, Path, w(PosList, Lang), LogicResult),
+    
+    % 2. Extract Coin Flip for Random (if applicable)
+    (   GodType == random
+    ->  length(Path, Len),
+        Idx is Len + 1,
+        log(debug, '  Random: Len=~w, Idx=~w, List=~w', [Len, Idx, RndAnsOrList]),
+        nth1(Idx, RndAnsOrList, CoinFlip),
+        log(debug, '  CoinFlip=~w', [CoinFlip])
+    ;   CoinFlip = _
+    ),
+
+    % 3. Determine Response (Handle Crashes)
+    god_utterance(GodType, LogicResult, CoinFlip, Lang, Utterance),
+    log(debug, '  GodUtterance: ~w', [Utterance]).
+
+% TRULY: Crashes on Paradox
+god_utterance(truly, true, _, Lang, U) :- get_utterance(true, Lang, U).
+god_utterance(truly, false, _, Lang, U) :- get_utterance(fail, Lang, U).
+god_utterance(truly, paradox, _, _, silent).       % <--- SILENCE
+god_utterance(truly, paradox_truly, _, _, silent). % Specific Trap
+
+% FALSELY: Crashes on Paradox
+god_utterance(falsely, true, _, Lang, U) :- get_utterance(fail, Lang, U).
+god_utterance(falsely, false, _, Lang, U) :- get_utterance(true, Lang, U).
+god_utterance(falsely, paradox, _, _, silent).     % <--- SILENCE
+god_utterance(falsely, paradox_falsely, _, _, silent). % Specific Trap
+
+% RANDOM: Immune (Standard Physics)
+% Ignores 'LogicResult' entirely and uses 'RandomAnswer' (the coin flip)
+god_utterance(random, _, true, Lang, U) :- get_utterance(true, Lang, U).
+god_utterance(random, _, fail, Lang, U) :- get_utterance(fail, Lang, U).
+
+
 % at_position(Position, GodType, WorldState)
 % Succeeds if the god at Position is GodType within the WorldState.
 % Worldstate is w(PosList, Language)
@@ -124,6 +257,14 @@ is_question(_, _, fail).
 % Base Case 2: Questions about the world are allowed.
 is_question(NumPos, _, at_position_question(Pos, God)) :-
     is_position(NumPos, Pos), is_god(God).
+
+% NEW: The Paradox Atoms
+% 1. Universal Paradox: "Is the answer to this question 'No'?"
+% is_question(_, _, paradox_universal).
+% 2. False-Killer: "Will you answer 'da'?" (Traps Liars)
+% is_question(_, _, paradox_falsely).
+% 3. True-Killer: "Will you answer 'ja'?" (Traps Truth-Tellers)
+% is_question(_, _, paradox_truly).
 
 % Base Case 3: Questions about how gods at positions might respond to questions are allowed.
 is_question(NumPos, MaxQDepth, query_position_question(Pos, Q)) :-
@@ -400,14 +541,28 @@ get_evaluate_signature(Q, NumQs, Families, sig(LogicalSig, UtteranceSig)) :-
 
 % Helper to get the set of unique answers a specific family gives to Q
 get_family_eval_set(Q, NumQs, candidate(FamilyTemplate, AllowedLangs), pair(LogicalSet, UtteranceSet)) :-
-    findall(pair(Ans, Token),
+    findall(pair(Ans, Utterance),
             (   generate_worlds_from_templates(FamilyTemplate, NumQs, AllowedLangs, World),
-                ( evaluate(Q, [], World) -> Ans=true ; Ans=fail ),
+                
+                % Use new evaluator
+                evaluate_3state(Q, [], World, Val),
+                
+                % Map 3-state logic to Signature Token
+                (Val == true -> Ans=true 
+                ; Val == false -> Ans=fail 
+                ; Ans=paradox % New Token
+                ),
+                
                 World = w(_, Lang),
-                get_utterance(Ans, Lang, Token)
+                % Simulate the utterance to capture silence
+                % We pick Position 1 arbitrarily for the signature 'utterance' profile 
+                % (or we can just skip this if not using utterance sigs anymore)
+                (Val == true -> get_utterance(true, Lang, Utterance)
+                ; Val == false -> get_utterance(fail, Lang, Utterance)
+                ; Utterance = silent
+                )
             ),
             RawPairs),
-    % Split pairs into two lists
     maplist(arg(1), RawPairs, LogRaw),
     maplist(arg(2), RawPairs, UttRaw),
     sort(LogRaw, LogicalSet),
