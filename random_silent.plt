@@ -1,7 +1,7 @@
 % :- use_module(library(lists)).
 :- use_module(library(plunit)).
 :- consult('random_silent.pl').
-:- assert(current_log_level(info)).
+:- assert(current_log_level(debug)).
 
 :- begin_tests(simple_signatures).
 
@@ -178,39 +178,39 @@ test('all_disjoint/1 fails if any two sets overlap', [fail]) :- all_disjoint([[a
 % With unknown language, signatures include results from BOTH languages.
 
 test('get_family_signature_set for "all truly" family includes both [da] and [ja]') :-
-    Tree = tree(q(1, true), leaf, leaf),
+    Tree = tree(q(1, true), leaf, leaf, leaf),
     build_uniform_family(1, truly, Family),
     % Truth: da_yes -> da, da_no -> ja.
     get_family_signature_set(Tree, /*num_questions=*/1, Family, [[da], [ja]]).
 
 test('get_family_signature_set for "all falsely" family includes both [da] and [ja]') :-
-    Tree = tree(q(1, true), leaf, leaf),
+    Tree = tree(q(1, true), leaf, leaf, leaf),
     build_uniform_family(1, falsely, Family),
     % Falsely: da_yes -> ja, da_no -> da.
     get_family_signature_set(Tree, /*num_questions=*/1, Family, [[da], [ja]]).
 
 test('get_family_signature_set for "all random" family is [da, ja, silent]') :-
-    Tree = tree(q(1, true), leaf, leaf),
+    Tree = tree(q(1, true), leaf, leaf, leaf),
     build_uniform_family(1, random, Family),
     % Random: da, ja, and silent are possible.
     get_family_signature_set(Tree, /*num_questions=*/1, Family, [[da], [ja], [silent]]).
 
 test('2-question tree with "all truly" family has outcomes [da, da] and [ja, ja]') :-
-    Tree = tree(q(1, true), tree(q(1, true), leaf, leaf), tree(q(1, true), leaf, leaf)),
+    Tree = tree(q(1, true), tree(q(1, true), leaf, leaf, leaf), tree(q(1, true), leaf, leaf, leaf), leaf),
     build_uniform_family(1, truly, Family),
     % Lang Yes: T->da, T->da.
     % Lang No:  T->ja, T->ja.
     get_family_signature_set(Tree, /*num_questions=*/2, Family, [[da, da], [ja, ja]]).
 
 test('2-question tree with "all falsely" family has outcomes [ja, ja] and [da, da]') :-
-    Tree = tree(q(1, true), tree(q(1, true), leaf, leaf), tree(q(1, true), leaf, leaf)),
+    Tree = tree(q(1, true), tree(q(1, true), leaf, leaf, leaf), tree(q(1, true), leaf, leaf, leaf), leaf),
     build_uniform_family(1, falsely, Family),
     % Lang Yes: F->ja, F->ja.
     % Lang No:  F->da, F->da.
     get_family_signature_set(Tree, /*num_questions=*/2, Family, [[da, da], [ja, ja]]).
 
 test('2-question tree with "all random" family has all 9 possible outcomes') :-
-    Tree = tree(q(1, true), tree(q(1, true), leaf, leaf), tree(q(1, true), leaf, leaf)),
+    Tree = tree(q(1, true), tree(q(1, true), leaf, leaf, leaf), tree(q(1, true), leaf, leaf, leaf), tree(q(1, true), leaf, leaf, leaf)),
     build_uniform_family(1, random, Family),
     ExpectedSet = [
         [da, da], [da, ja], [da, silent],
@@ -347,7 +347,7 @@ test('partition: does NOT split [True, False] for simple Q (both in both)') :-
     maplist(wrap_family_in_candidate([da_yes, da_no]), [F_True_Template, F_False_Template], In_Families),
     NumQs           = 1,
     Question        = q(1, true),
-    partition_families(In_Families, NumQs, Question, DaFamilies, JaFamilies),
+    partition_families(In_Families, NumQs, Question, DaFamilies, JaFamilies, _SilentFamilies),
     
     % Truly says Da in Yes, Ja in No. Falsely says Ja in Yes, Da in No.
     % So DaCandidates should have Truly (Lang Yes) and Falsely (Lang No).
@@ -370,7 +370,7 @@ test('partition: does NOT split [True, Random] families for simple Q') :-
     maplist(wrap_family_in_candidate([da_yes, da_no]), [F_True_Template, F_Rand_Template], In_Families),
     NumQs           = 1,
     Question        = q(1, true),
-    partition_families(In_Families, NumQs, Question, DaFamilies, JaFamilies),
+    partition_families(In_Families, NumQs, Question, DaFamilies, JaFamilies, _SilentFamilies),
     
     % Truly: Da->Yes, Ja->No.
     % Random: Da->Both, Ja->Both.
@@ -389,7 +389,7 @@ test('partition: correctly splits [False, Random] families (da=True)') :-
     maplist(wrap_family_in_candidate([da_yes, da_no]), [F_False_Template, F_Rand_Template], In_Families),
     NumQs           = 1,
     Question        = q(1, true),
-    partition_families(In_Families, NumQs, Question, DaFamilies, JaFamilies),
+    partition_families(In_Families, NumQs, Question, DaFamilies, JaFamilies, _SilentFamilies),
     
     % Falsely: Da->No, Ja->Yes.
     % Random: Both.
@@ -409,7 +409,7 @@ test('partition: correctly splits [True, False, Random] families (da=True)') :-
     maplist(wrap_family_in_candidate([da_yes, da_no]), [F_True_Template, F_False_Template, F_Rand_Template], In_Families),
     NumQs           = 1,
     Question        = q(1, true),
-    partition_families(In_Families, NumQs, Question, DaFamilies, JaFamilies),
+    partition_families(In_Families, NumQs, Question, DaFamilies, JaFamilies, _SilentFamilies),
     
     % Just verifying counts roughly since we checked logic above
     length(DaFamilies, 3),
@@ -434,22 +434,25 @@ test(verify_embedded_question_split, [nondet]) :-
     log(info, 'Testing Q: ~w', [Q]),
     
     % 3. Partition
-    partition_families(Candidates, NumQs, Q, DaCandidates, JaCandidates),
+    partition_families(Candidates, NumQs, Q, DaCandidates, JaCandidates, SilentCandidates),
     
     length(DaCandidates, DaCount),
     length(JaCandidates, JaCount),
+    length(SilentCandidates, SilentCount),
     
-    log(info, 'Split Result: Da=~w, Ja=~w', [DaCount, JaCount]),
+    log(info, 'Split Result: Da=~w, Ja=~w, Silent=~w', [DaCount, JaCount, SilentCount]),
     
-    % 4. Verify Expectation: 4 vs 4
-    % T (at 1): da. F (at 1): ja. R (at 1): both.
+    % 4. Verify Expectation: 4 vs 4 vs 2
+    % T (at 1): da. F (at 1): ja. R (at 1): da, ja, silent.
     % T at 1: [T,F,R], [T,R,F] -> Da
     % F at 1: [F,T,R], [F,R,T] -> Ja
-    % R at 1: [R,T,F], [R,F,T] -> Da AND Ja
+    % R at 1: [R,T,F], [R,F,T] -> Da AND Ja AND Silent
     % So Da should have 2(T) + 2(R) = 4.
     % Ja should have 2(F) + 2(R) = 4.
+    % Silent should have 2(R) = 2.
     assertion(DaCount == 4),
-    assertion(JaCount == 4).
+    assertion(JaCount == 4),
+    assertion(SilentCount == 2).
 
 % --- Integration Tests for `find_pruning_tree/7` ---
 test('pruning_tree: FAILS for [True, False] with 1 simple question (ambiguous)') :-
@@ -650,7 +653,7 @@ test('3 Gods (T,F,R) is IMPOSSIBLE with complexity 0 questions (simple direct qu
     % 2. Call the main solver
     % We expect this to FAIL. Without nested questions, we cannot bypass the 
     % Truth/Liar ambiguity or reliably identify Random in 3 steps.
-    call_with_time_limit(60, is_distinguishing_tree_bounded(
+    call_with_time_limit(30, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
         QComplexity,
@@ -669,7 +672,7 @@ test('3 Gods (T,F,R) is SOLVABLE with complexity 1 questions (3 questions deep)'
     
     % 2. Call the main solver
     % We expect this to SUCCEED now that languages are unconstrained but we use embedded Qs.
-    call_with_time_limit(60, is_distinguishing_tree_bounded(
+    call_with_time_limit(30, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
         QComplexity,
@@ -687,7 +690,7 @@ test('3 Gods (T,F,R) is IMPOSSIBLE with only 2 questions (tree depth 2)', [fail]
     Generator    = generate_permutation_families,
     
     % 2. Call the main solver
-    call_with_time_limit(60, is_distinguishing_tree_bounded(
+    call_with_time_limit(30, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
         QComplexity,
@@ -705,7 +708,7 @@ test('3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep)'
     Generator    = generate_permutation_families,
     
     % 2. Call the main solver with a time limit
-    call_with_time_limit(60, is_distinguishing_tree_bounded(
+    call_with_time_limit(30, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
         QComplexity,
@@ -723,7 +726,7 @@ test('3 Gods (T,F,R) is SOLVABLE with complexity 3 questions (3 questions deep)'
     Generator    = generate_permutation_families,
     
     % 2. Call the main solver with a time limit
-    call_with_time_limit(120, is_distinguishing_tree_bounded(
+    call_with_time_limit(30, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
         QComplexity,
