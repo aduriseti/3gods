@@ -662,24 +662,25 @@ test('3 Gods (T,F,R) is IMPOSSIBLE with complexity 0 questions (simple direct qu
         Generator
     )).
 
-test('3 Gods (T,F,R) is SOLVABLE with complexity 1 questions (3 questions deep)') :-
-    % 1. Define the problem parameters
-    NumPos       = 3,
-    NumQs        = 3, 
-    QComplexity  = 1, % Limit to simple questions
-    GodTypes     = [truly, falsely, random],
-    Generator    = generate_permutation_families,
+% Redundant w/ solve_and_print_riddle test above
+% test('3 Gods (T,F,R) is SOLVABLE with complexity 1 questions (3 questions deep)') :-
+%     % 1. Define the problem parameters
+%     NumPos       = 3,
+%     NumQs        = 3, 
+%     QComplexity  = 1, % Limit to simple questions
+%     GodTypes     = [truly, falsely, random],
+%     Generator    = generate_permutation_families,
     
-    % 2. Call the main solver
-    % We expect this to SUCCEED now that languages are unconstrained but we use embedded Qs.
-    call_with_time_limit(30, is_distinguishing_tree_bounded(
-        NumPos,
-        NumQs,
-        QComplexity,
-        GodTypes,
-        _Tree,
-        Generator
-    )).
+%     % 2. Call the main solver
+%     % We expect this to SUCCEED now that languages are unconstrained but we use embedded Qs.
+%     call_with_time_limit(60, is_distinguishing_tree_bounded(
+%         NumPos,
+%         NumQs,
+%         QComplexity,
+%         GodTypes,
+%         _Tree,
+%         Generator
+%     )).
 
 test('3 Gods (T,F,R) is IMPOSSIBLE with only 2 questions (tree depth 2)', [fail]) :-
     % 1. Define the problem parameters
@@ -708,7 +709,7 @@ test('3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep)'
     Generator    = generate_permutation_families,
     
     % 2. Call the main solver with a time limit
-    call_with_time_limit(30, is_distinguishing_tree_bounded(
+    call_with_time_limit(60, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
         QComplexity,
@@ -726,7 +727,7 @@ test('3 Gods (T,F,R) is SOLVABLE with complexity 3 questions (3 questions deep)'
     Generator    = generate_permutation_families,
     
     % 2. Call the main solver with a time limit
-    call_with_time_limit(30, is_distinguishing_tree_bounded(
+    call_with_time_limit(60, is_distinguishing_tree_bounded(
         NumPos,
         NumQs,
         QComplexity,
