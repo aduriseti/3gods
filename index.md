@@ -14,7 +14,7 @@ I decided to go with Prolog. Prolog is a declarative programming language (like 
 
 <blockquote>
 <details id="prolog-details" open markdown="1">
-<summary> <b> <em> Click if have never seen Prolog before or want a refresher on its syntax. </em> </b> </summary>
+<summary> <b> <em> Click if you have never seen Prolog before or want a refresher on its syntax. </em> </b> </summary>
 
 This Wikipedia section is a good intro to the language: <https://en.wikipedia.org/wiki/Prolog#Syntax_and_semantics>.
 
