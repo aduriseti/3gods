@@ -7,18 +7,18 @@
 test('Optimization Verification: Cut prevents Ja branch if Da fails') :-
     % 1. Clear State
     init_stats,
-    retractall(distinct_q(_, _, _)),
-    retractall(seen_signature(_)),
+    retractall(user:distinct_q(_, _, _)),
+    retractall(user:seen_signature(_)),
 
     % 2. Mock the Universe with 2 Questions
     % Q1: "If asked G1 'Is G1 truly', say da" (Complex)
     % This question effectively splits candidates by language/god, so it passes the "Useless Split" check.
     % But we expect it to fail at depth 2 (exhausted).
     Q1 = query_position_question(1, at_position_question(1, truly)),
-    assertz(distinct_q(Q1, sig([], []), 1)),
+    assertz(user:distinct_q(Q1, sig([], []), 1)),
 
     % Q2: "True" (Simple) - Just to have a second option
-    assertz(distinct_q(true, sig([], []), 0)),
+    assertz(user:distinct_q(true, sig([], []), 0)),
 
     % 3. Setup Candidates (Standard 3 God problem)
     NumPos = 3,
@@ -39,9 +39,9 @@ test('Optimization Verification: Cut prevents Ja branch if Da fails') :-
 
     % 5. Verify Statistics
     % Check if we entered the [da] branch
-    (path_stats(explored, [da], E_Da) -> true ; E_Da = 0),
+    (user:path_stats(explored, [da], E_Da) -> true ; E_Da = 0),
     % Check if we entered the [ja] branch
-    (path_stats(explored, [ja], E_Ja) -> true ; E_Ja = 0),
+    (user:path_stats(explored, [ja], E_Ja) -> true ; E_Ja = 0),
 
     format('~n--- Optimization Test Stats ---~n', []),
     format('Explored [da]: ~w~n', [E_Da]),

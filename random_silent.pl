@@ -622,12 +622,6 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
         fail
     ).
 
-% --- Base Cases (use CurrentDepth) ---
-find_pruning_tree_worker(_, _, _, _, _, [], leaf, _, _, _).
-find_pruning_tree_worker(_, _, _, _, _, [_Candidate], leaf, _, _, _).
-find_pruning_tree_worker(_, 0, _, _, _, Candidates, leaf, _, _, _) :- % Base case for depth
-    (length(Candidates, 1) -> true ; !, fail). % Ran out of depth
-
 :- dynamic current_ancestor/2.
 :- dynamic current_branch/2.
 
@@ -646,6 +640,12 @@ with_branch(ParentDepth, Branch, Goal) :-
         Goal,
         retract(current_branch(ParentDepth, Branch))
     ).
+
+% --- Base Cases (use CurrentDepth) ---
+find_pruning_tree_worker(_, _, _, _, _, [], leaf, _, _, _).
+find_pruning_tree_worker(_, _, _, _, _, [_Candidate], leaf, _, _, _).
+find_pruning_tree_worker(_, 0, _, _, _, Candidates, leaf, _, _, _) :- % Base case for depth
+    (length(Candidates, 1) -> true ; !, fail). % Ran out of depth
 
 % --- Recursive Pruning Step (Corrected) ---
 find_pruning_tree_worker(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, tree(q(Pos, Q), DaTree, JaTree, SilentTree), StartE, StartP, Path) :-
