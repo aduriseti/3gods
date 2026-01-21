@@ -6,11 +6,11 @@ Here's an easy and very simple riddle:
 
 Go on - take a few minutes to solve it (if the answer isn't obvious already).
 
-<!-- excerpt-end -->
-
 ...
 
 Ahh - don't feel too bad - I couldn't help myself. Figuring this one out took me longer than I care to admit.  Famously (and if you haven't already guessed from the title) this is the so-called "Hardest Logic Puzzle Ever" (<https://en.wikipedia.org/wiki/The_Hardest_Logic_Puzzle_Ever>). If you want to solve this puzzle on your own, don't worry - keep reading - I'm not going to discuss any solutions. Instead, I will talk about my formal method of solving this problem with logic programming - which AFAIK no one has done before.
+
+<!-- excerpt-end -->
 
 I decided to go with Prolog. Prolog is a declarative programming language (like SQL, or I guess TensorFlow v1?) as opposed to imperative programming languages like Python/C++/go/rust/etc... (also TensorFlow v2). What you do is specify known facts about the world (e.g. sky is blue, I am looking at the sky) and let Prolog's engine solve for unknowns (The color of the thing I am looking as is \_\_\_\_ --- and in this case Prolog would fill in `blue` for the blank). Here, our unknown that Prolog solves for would be the sequence of questions we use to solve this riddle.
 
