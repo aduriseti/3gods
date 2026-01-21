@@ -13,19 +13,30 @@ Ahh - don't feel too bad - I couldn't help myself. Figuring this one out took me
 I decided to go with Prolog. Prolog is a declarative programming language (like SQL, or I guess TensorFlow v1?) as opposed to imperative programming languages like Python/C++/go/rust/etc... (also TensorFlow v2). What you do is specify known facts about the world (e.g. sky is blue, I am looking at the sky) and let Prolog's engine solve for unknowns (The color of the thing I am looking as is \_\_\_\_ --- and in this case Prolog would fill in `blue` for the blank). Here, our unknown that Prolog solves for would be the sequence of questions we use to solve this riddle.
 
 <blockquote>
-<details markdown="1">
+<details id="prolog-details" open markdown="1">
 <summary> <b> <em> Click if have never seen Prolog before or want a refresher on its syntax. </em> </b> </summary>
 
 This Wikipedia section is a good intro to the language: <https://en.wikipedia.org/wiki/Prolog#Syntax_and_semantics>.
 
 If you don't want to read all that - here's a 2-minute crash course:
 
-<iframe src="https://swish.swi-prolog.org/?code=https://raw.githubusercontent.com/aduriseti/3gods/main/crash_course.pl" 
+<iframe id="swish-iframe"
+        src="https://swish.swi-prolog.org/?code=https://raw.githubusercontent.com/aduriseti/3gods/main/crash_course.pl&q=i_enjoy(Time)." 
         width="100%" 
         height="600px">
 </iframe>
 
 </details>
+
+<script>
+  // Collapse this section once playground loads.
+  document.getElementById('swish-iframe').onload = function() {
+    setTimeout(function() {
+      document.getElementById('prolog-details').removeAttribute('open');
+    }, 1000);
+    
+  };
+</script>
 </blockquote>
 
 In this write-up I'll guide you through how I wrote this solver, roughly retracing the evolution of my implementation and thought process. I'll start by describing how to use logic programming to solve a much simpler problem. Then, I'll discuss how to extend this approach to the full 3-gods problem. Finally, I'll explain necessary optimizations.
