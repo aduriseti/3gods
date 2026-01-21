@@ -447,78 +447,120 @@ my_nub([H | T], T2) :-
 wrap_family_in_candidate(InitialLangs, FamilyTemplate, candidate(FamilyTemplate, InitialLangs)).
 
 % --- Statistics for Pruning Ratio ---
-:- dynamic explored_stats/2. % explored_stats(Depth, Count)
-:- dynamic pruned_stats/2.   % pruned_stats(Depth, Count)
+:- dynamic path_stats/3. % path_stats(Type, Path, Count). Type = explored/pruned
 
 init_stats :-
-    retractall(explored_stats(_, _)),
-    retractall(pruned_stats(_, _)).
+    retractall(path_stats(_, _, _)).
 
-inc_explored(Depth) :-
-    (   retract(explored_stats(Depth, N))
+inc_explored(Path) :-
+    (   retract(path_stats(explored, Path, N))
     ->  N1 is N + 1,
-        assertz(explored_stats(Depth, N1))
+        assertz(path_stats(explored, Path, N1))
     ;   N1 = 1,
-        assertz(explored_stats(Depth, 1))
+        assertz(path_stats(explored, Path, 1))
     ),
-    (0 is N1 mod 300 -> print_progress_stat(Depth, N1, 'Explored') ; true).
+    (0 is N1 mod 300 -> print_progress_stat(Path, N1, 'Explored') ; true).
 
-inc_pruned(Depth) :-
-    (   retract(pruned_stats(Depth, N))
+inc_pruned(Path) :-
+    (   retract(path_stats(pruned, Path, N))
     ->  N1 is N + 1,
-        assertz(pruned_stats(Depth, N1))
+        assertz(path_stats(pruned, Path, N1))
     ;   N1 = 1,
-        assertz(pruned_stats(Depth, 1))
-    ),
-    (0 is N1 mod 300 -> print_progress_stat(Depth, N1, 'Pruned') ; true).
+        assertz(path_stats(pruned, Path, 1))
+    ).
 
-print_progress_stat(Depth, Count, Type) :-
+print_progress_stat(Path, Count, Type) :-
+    length(Path, Depth),
     % Only print periodically or if interesting
-    log(info, ''),
-    log(info, '--- SEARCH TELEMETRY (Trigger: ~w at Depth ~w reached ~w) ---', [Type, Depth, Count]),
+    log(debug, ''),
+    log(debug, '--- SEARCH TELEMETRY (Trigger: ~w at Path ~w reached ~w) ---', [Type, Path, Count]),
     
-    % Find max depth to start printing from (assuming max depth is TotalNumQs which isn't globally available, 
-    % so we just search for the highest ancestor or stat)
-    findall(D, (current_ancestor(D, _); explored_stats(D, _)), Depths),
-    (Depths = [] -> MaxD = 3 ; max_list(Depths, MaxD)),
-    
-    print_telemetry_tree(MaxD).
+    % Use Max Depth of 3 for visualization default
+    print_telemetry_tree(3, heartbeat, []).
 
-print_telemetry_tree(0) :- !.
-print_telemetry_tree(D) :-
-    % Get stats for this level (Global)
-    get_stats_for_depth(D, Explored, Pruned, RatePct),
-    
-    % Check if there is an active ancestor at this level
-    (   current_ancestor(D, node(q(Pos, Q), stats(NE, NP)))
-    ->  render_question_short(Q, QStr),
-        (NE > 0 -> NRate is (NP / NE) * 100 ; NRate = 0.0),
-        format(string(NodeStr), "Ask G~w: ~s [Node: E:~w P:~w R:~2f%]", [Pos, QStr, NE, NP, NRate])
-    ;   NodeStr = "..."
-    ),
-    
-    findall(MD, (current_ancestor(MD, _); explored_stats(MD, _)), Depths),
-    (Depths = [] -> MaxTotal = 3 ; max_list(Depths, MaxTotal)),
-    DisplayLevel is MaxTotal - D + 1,
-
-    IndentLen is (MaxTotal - D) * 4, 
-    format(string(Indent), "~t~*|", [IndentLen]),
-    
-    % Format the stats line (Level Stats + Node String)
-    format('~w[Level ~w] Global: E:~w P:~w R:~2f% | ~s~n', 
-           [Indent, DisplayLevel, Explored, Pruned, RatePct, NodeStr]),
-    
-    NextD is D - 1,
-    print_telemetry_tree(NextD).
-
-get_stats_for_depth(D, Explored, Pruned, RatePct) :-
-    (explored_stats(D, E) -> Explored = E ; Explored = 0),
-    (pruned_stats(D, P) -> Pruned = P ; Pruned = 0),
+get_stats_for_path(Path, Explored, Pruned, RatePct) :-
+    (path_stats(explored, Path, E) -> Explored = E ; Explored = 0),
+    (path_stats(pruned, Path, P) -> Pruned = P ; Pruned = 0),
     (   Explored > 0
     ->  Rate is (Pruned / Explored) * 100
     ;   Rate = 0.0
     ),
     RatePct = Rate.
+
+print_telemetry_tree(0, _, _) :- !.
+print_telemetry_tree(D, Context, PathToD) :-
+    (Context == heartbeat -> Level = debug ; Level = info),
+    should_log(Level),
+
+    findall(MD, (current_ancestor(MD, _)), Depths),
+    (Depths = [] -> MaxTotal = 3 ; max_list(Depths, MaxTotal)),
+    DisplayLevel is MaxTotal - D + 1,
+    IndentLen is (MaxTotal - D) * 8, 
+    format(string(Indent), "~t~*|", [IndentLen]),
+
+    % 1. Get stats for this Path
+    get_stats_for_path(PathToD, Explored, Pruned, _),
+    
+    (   Context == heartbeat
+    ->  EffectiveE is Explored - 1,
+        EffectiveP is Pruned,
+        Active is max(0, EffectiveE - EffectiveP),
+        (EffectiveE > 0 -> GlobalRatePct is (EffectiveP / EffectiveE) * 100 ; GlobalRatePct = 0.0)
+    ;   Active is Explored - Pruned,
+        (Explored > 0 -> GlobalRatePct is (Pruned / Explored) * 100 ; GlobalRatePct = 0.0)
+    ),
+
+    % 2. Print Global Stats Line
+    log(Level, '~w[Level ~w] Path:~w | E:~w P:~w Pruned:~2f% Active:~w', 
+           [Indent, DisplayLevel, PathToD, Explored, Pruned, GlobalRatePct, Active]),
+
+    % 3. Check Ancestor for Node Info & Recursion
+    (   current_ancestor(D, node(q(Pos, Q), stats(NE, NP)))
+    ->  render_question_short(Q, QStr),
+        (   Context == heartbeat
+        ->  NEff is NE - 1,
+            NPeff is NP,
+            NActive is max(0, NEff - NPeff),
+            (NEff > 0 -> NRate is (NPeff / NEff) * 100 ; NRate = 0.0)
+        ;   NActive is NE - NP,
+            (NE > 0 -> NRate is (NP / NE) * 100 ; NRate = 0.0)
+        ),
+        log(Level, '~wAsk G~w: ~s [Node: E:~w P:~w Pruned:~2f% Active:~w]', [Indent, Pos, QStr, NE, NP, NRate, NActive]),
+        
+        % Recurse
+        NextD is D - 1,
+        (   NextD > 0
+        ->  ParentForNext is D,
+            (current_branch(ParentForNext, Branch) -> 
+                ChildPath = [Branch|PathToD],
+                format(string(BStr), "~w", [Branch]),
+                log(Level, '~w        \\', [Indent]),
+                log(Level, '~w         ~s', [Indent, BStr]),
+                log(Level, '~w          \\', [Indent]),
+                print_telemetry_tree(NextD, Context, ChildPath)
+            ;   true
+            )
+        ;   true
+        )
+    ;   true
+    ).
+
+print_dead_end_report(D, Path) :-
+    % 1. Print the Active Path first
+    print_telemetry_tree(3, commit, []), % Always start from root
+    
+    % 2. Now print the children summary for the failed node D
+    log(info, '--- Dead End Summary for Path ~w ---', [Path]),
+    
+    forall(member(B, [da, ja, silent]), (
+        ChildPath = [B|Path],
+        get_stats_for_path(ChildPath, E, P, _),
+        (E > 0 ->
+            A is E - P,
+            (E > 0 -> R is (P / E) * 100 ; R = 0.0),
+            log(info, '    Branch ~w -> [Path:~w] E:~w P:~w Pruned:~2f% Active:~w', [B, ChildPath, E, P, R, A])
+        ; true)
+    )).
 
 is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, GeneratorGoal) :-
 
@@ -553,7 +595,7 @@ is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Gener
         find_pruning_tree(NumQs, NumQs, QComplexity, NumPos, UniqueFamilies, UniqueFamilies, Tree),
         (
             log(info, '--- FINAL SEARCH TELEMETRY ---'),
-            print_telemetry_tree(NumQs)
+            print_telemetry_tree(NumQs, commit, [])
         )
     ).
 
@@ -562,27 +604,32 @@ is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Gener
 
 % --- Wrapper with Failure Logging ---
 find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, Tree) :-
-    % Capture stats at start of search for this node
-    (explored_stats(CurrentDepth, StartE) -> true ; StartE = 0),
-    (pruned_stats(CurrentDepth, StartP) -> true ; StartP = 0),
+    find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, Tree, []).
 
-    (   find_pruning_tree_worker(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, Tree, StartE, StartP)
+find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, Tree, Path) :-
+    % Capture stats at start of search for this node
+    (path_stats(explored, Path, StartE) -> true ; StartE = 0),
+    (path_stats(pruned, Path, StartP) -> true ; StartP = 0),
+
+    (   find_pruning_tree_worker(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, Tree, StartE, StartP, Path)
     ->  true
     ;   length(Candidates, CandCount),
         (CandCount > 0, CurrentDepth > 0
-        ->  log(debug, '[FAILURE] Node Failed at Depth ~w. Candidates: ~w', [CurrentDepth, CandCount])
+        ->  log(info, '[EXHAUSTED] Node Failed at Path ~w. Candidates: ~w', [Path, CandCount]),
+            print_dead_end_report(CurrentDepth, Path)
         ;   true
         ),
         fail
     ).
 
 % --- Base Cases (use CurrentDepth) ---
-find_pruning_tree_worker(_, _, _, _, _, [], leaf, _, _).
-find_pruning_tree_worker(_, _, _, _, _, [_Candidate], leaf, _, _).
-find_pruning_tree_worker(_, 0, _, _, _, Candidates, leaf, _, _) :- % Base case for depth
+find_pruning_tree_worker(_, _, _, _, _, [], leaf, _, _, _).
+find_pruning_tree_worker(_, _, _, _, _, [_Candidate], leaf, _, _, _).
+find_pruning_tree_worker(_, 0, _, _, _, Candidates, leaf, _, _, _) :- % Base case for depth
     (length(Candidates, 1) -> true ; !, fail). % Ran out of depth
 
 :- dynamic current_ancestor/2.
+:- dynamic current_branch/2.
 
 % Helper to manage the ancestor stack during recursion
 with_ancestor(Depth, Info, Goal) :-
@@ -592,21 +639,31 @@ with_ancestor(Depth, Info, Goal) :-
         retract(current_ancestor(Depth, Info))
     ).
 
+% Helper to track which branch (da/ja/silent) we are exploring from a parent depth
+with_branch(ParentDepth, Branch, Goal) :-
+    setup_call_cleanup(
+        assertz(current_branch(ParentDepth, Branch)),
+        Goal,
+        retract(current_branch(ParentDepth, Branch))
+    ).
+
 % --- Recursive Pruning Step (Corrected) ---
-find_pruning_tree_worker(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, tree(q(Pos, Q), DaTree, JaTree, SilentTree), StartE, StartP) :-
+find_pruning_tree_worker(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, tree(q(Pos, Q), DaTree, JaTree, SilentTree), StartE, StartP, Path) :-
     CurrentDepth > 0,
     NextDepth is CurrentDepth - 1,
 
     % --- Generate Distinct Questions ---
     distinct_question(MaxQComplexity, NumPos, TotalNumQs, CanonicalFamilies, q(Pos, Q)),
-    inc_explored(CurrentDepth),
+    inc_explored(Path),
 
     partition_families(Candidates, TotalNumQs, q(Pos, Q), DaCandidates, JaCandidates, SilentCandidates),
 
     % --- Pruning Check 1: Useless Split ---
-    dif(DaCandidates, Candidates),
-    dif(JaCandidates, Candidates),
-    dif(SilentCandidates, Candidates),
+    (   (dif(DaCandidates, Candidates), dif(JaCandidates, Candidates), dif(SilentCandidates, Candidates))
+    ->  true
+    ;   inc_pruned(Path),
+        fail
+    ),
 
     % --- Pruning Check 2: Sub-Problem Too Large ---
     length(DaCandidates, DaSize),
@@ -614,14 +671,14 @@ find_pruning_tree_worker(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, Canon
     length(SilentCandidates, SilentSize),
     MaxSize is 2^NextDepth, % NOTE TO GEMINI-CLI - DO NOT MODIFY THIS LINE EVER
     (   ( DaSize > MaxSize ; JaSize > MaxSize ; SilentSize > MaxSize )
-    ->  inc_pruned(CurrentDepth),
+    ->  inc_pruned(Path),
         fail
     ;   true
     ),
 
     % --- Calculate Node Stats ---
-    (explored_stats(CurrentDepth, CurrE) -> true ; CurrE = 0),
-    (pruned_stats(CurrentDepth, CurrP) -> true ; CurrP = 0),
+    (path_stats(explored, Path, CurrE) -> true ; CurrE = 0),
+    (path_stats(pruned, Path, CurrP) -> true ; CurrP = 0),
     NodeE is CurrE - StartE,
     NodeP is CurrP - StartP,
 
@@ -630,13 +687,11 @@ find_pruning_tree_worker(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, Canon
         % Log the commit state with the new ancestor active
         log(info, ''),
         log(info, '--- COMMIT TELEMETRY (Depth ~w) ---', [CurrentDepth]),
-        findall(D, (current_ancestor(D, _); explored_stats(D, _)), Depths),
-        (Depths = [] -> MaxD = 3 ; max_list(Depths, MaxD)),
-        print_telemetry_tree(MaxD),
+        print_telemetry_tree(3, commit, []),
 
-        find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, DaCandidates, DaTree),
-        find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, JaCandidates, JaTree),
-        find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, SilentCandidates, SilentTree)
+        with_branch(CurrentDepth, da, find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, DaCandidates, DaTree, [da|Path])), !,
+        with_branch(CurrentDepth, ja, find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, JaCandidates, JaTree, [ja|Path])), !,
+        with_branch(CurrentDepth, silent, find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, SilentCandidates, SilentTree, [silent|Path]))
     )).
 
 % --- Helpers required by the new algorithm ---
@@ -697,20 +752,6 @@ family_answers_question(q(Pos, Q), NumQs, candidate(FamilyTemplate, AllowedLangs
     query_position(Pos, Q, [], World, Ans), % Returns da/ja
     Ans == Answer,
     !. % We only need to find one such world, not all of them.
-
-% find_tree_by_simplest_question(MaxQComplexity, NumPos, NumQs, GodTypes, Tree, Generator)
-find_tree_by_simplest_question(MaxQComplexity, NumPos, NumQs, GodTypes, Tree, GeneratorGoal) :-
-    % 1. Iterate through question complexities, from 0 up to the max.
-    between(0, MaxQComplexity, CurrentQComplexity),
-
-    log(info, '--- Searching with question complexity limit: ~w ---', [CurrentQComplexity]),
-
-    % 2. Call a version of is_distinguishing_tree that uses the bounded generator.
-    is_distinguishing_tree_bounded(NumPos, NumQs, CurrentQComplexity, GodTypes, Tree, GeneratorGoal),
-
-    % 3. Cut ('!') to stop the search as soon as the FIRST solution is found.
-    !.
-
 
 solve_3gods_tf(Tree) :- is_distinguishing_tree_bounded(
        3,                          % Num Positions
