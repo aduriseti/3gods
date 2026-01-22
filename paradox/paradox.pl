@@ -108,13 +108,17 @@ get_utterance(fail, da_no, da).
 query_position(Position, Question, Path, w(PosList, Language), Utterance) :-
     % Find the specific pos(...) term for the given Position.
     member(pos(Position, GodType, RandomAnswer), PosList),
-    % Call the updated query/4 predicate to get Logical Result
-    ( query(GodType, Question, Path, w(PosList, Language), RandomAnswer)
-    -> LogicalAns = true
-    ;  LogicalAns = fail
-    ),
-    % Map Logical Result to Utterance based on Language
-    get_utterance(LogicalAns, Language, Utterance).
+    
+    (   (GodType == random, length(Path, N), Idx is N + 1, nth1(Idx, RandomAnswer, silent))
+    ->  Utterance = silent
+    ;   % Call the updated query/4 predicate to get Logical Result
+        ( query(GodType, Question, Path, w(PosList, Language), RandomAnswer)
+        -> LogicalAns = true
+        ;  LogicalAns = fail
+        ),
+        % Map Logical Result to Utterance based on Language
+        get_utterance(LogicalAns, Language, Utterance)
+    ).
 
 % --- The Grammar ---
 % Base Case 1: Trivial questions are allowed.
@@ -157,6 +161,7 @@ god_types([truly, random, falsely]).
 
 is_random_answer(true).
 is_random_answer(fail).
+is_random_answer(silent).
 
 % --- Family Generation ---
 
@@ -200,13 +205,15 @@ generate_pos_list([pos(P, God, _)|T], NumQs, [pos(P, God, RndAns)|W]) :-
 % Simulates the questioning process for a given tree and world.
 get_answer_path(Tree, World, Path) :- get_answer_path_recursive(Tree, World, [], Path).
 get_answer_path_recursive(leaf, _, _, []).
-get_answer_path_recursive(tree(q(Pos, Q), DaT, JaT), World, PathSoFar, [Ans|Rest]) :-
-    query_position(Pos, Q, PathSoFar, World, Ans), % Ans will be da or ja
+get_answer_path_recursive(tree(q(Pos, Q), DaT, JaT, SilentT), World, PathSoFar, [Ans|Rest]) :-
+    query_position(Pos, Q, PathSoFar, World, Ans), % Ans will be da, ja, or silent
     (
         Ans = da
     ->  get_answer_path_recursive(DaT, World, [da|PathSoFar], Rest)
-    ;
-        get_answer_path_recursive(JaT, World, [ja|PathSoFar], Rest)
+    ;   Ans = ja
+    ->  get_answer_path_recursive(JaT, World, [ja|PathSoFar], Rest)
+    ;   Ans = silent
+    ->  get_answer_path_recursive(SilentT, World, [silent|PathSoFar], Rest)
     ).
 
 % get_family_signature_set(Tree, Family, SignatureSet)
@@ -390,6 +397,7 @@ invert_atom(true, fail).
 invert_atom(fail, true).
 invert_atom(da, ja).
 invert_atom(ja, da).
+invert_atom(silent, silent).
 
 % Computes the signature of `evaluate(Q)` across all worlds in Families.
 % Returns sig(LogicalSig, UtteranceSig).
@@ -498,7 +506,7 @@ find_pruning_tree(_, 0, _, _, _, Candidates, leaf) :- % Base case for depth
     (length(Candidates, 1) -> true ; !, fail). % Ran out of depth
 
 % --- Recursive Pruning Step (Corrected) ---
-find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, tree(q(Pos, Q), DaTree, JaTree)) :-
+find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, tree(q(Pos, Q), DaTree, JaTree, SilentTree)) :-
     CurrentDepth > 0,
     NextDepth is CurrentDepth - 1,
 
@@ -511,22 +519,22 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
     length(Candidates, CandidateCount),
     log(debug, 'try(depth: ~w, q: ~w, families_in: ~w)', [CurrentDepth, q(Pos, Q), CandidateCount]),
 
-    partition_families(Candidates, TotalNumQs, q(Pos, Q), DaCandidates, JaCandidates),
+    partition_families(Candidates, TotalNumQs, q(Pos, Q), DaCandidates, JaCandidates, SilentCandidates),
 
     % --- DEBUG: Print the result of the partition ---
     length(DaCandidates, DaSize),
     length(JaCandidates, JaSize),
-    log(debug, 'partition(da_count: ~w, ja_count: ~w)', [DaSize, JaSize]),
+    length(SilentCandidates, SilentSize),
+    log(debug, 'partition(da: ~w, ja: ~w, silent: ~w)', [DaSize, JaSize, SilentSize]),
 
     % --- Pruning Check 1: Useless Split (Corrected) ---
-    % Succeeds only if the split is useful (neither side is empty).
-    dif(DaCandidates, []),
-    dif(JaCandidates, []),
+    dif(DaCandidates, Candidates),
+    dif(JaCandidates, Candidates),
+    dif(SilentCandidates, Candidates),
 
     % --- Pruning Check 2: Sub-Problem Too Large (Corrected) ---
-    % Succeeds only if the sub-problems are not too large. Allows backtracking on failure.
-    MaxSize is 2^NextDepth,
-    (   ( DaSize > MaxSize ; JaSize > MaxSize )
+    MaxSize is 2^NextDepth, % NOTE TO GEMINI-CLI - DO NOT MODIFY THIS LINE EVER
+    (   ( DaSize > MaxSize ; JaSize > MaxSize ; SilentSize > MaxSize )
     ->  % This branch is taken if the sub-problem is too big
         inc_pruned(CurrentDepth),
         log(debug, 'prune(reason: sub-problem too large)'),
@@ -540,7 +548,8 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
 
     % --- Recurse ---
     find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, DaCandidates, DaTree),
-    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, JaCandidates, JaTree).
+    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, JaCandidates, JaTree),
+    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, SilentCandidates, SilentTree).
 
 % --- Helpers required by the new algorithm ---
 
@@ -550,8 +559,8 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
 % This new partition_families is much smarter.
 % --- The Final, Corrected Partition Logic ---
 
-partition_families(CandidatesIn, NumQs, QuestionNode, DaCandidates, JaCandidates) :-
-    % For each input candidate, try to refine it into a Da-branch candidate and a Ja-branch candidate
+partition_families(CandidatesIn, NumQs, QuestionNode, DaCandidates, JaCandidates, SilentCandidates) :-
+    % For each input candidate, try to refine it into Da, Ja, and Silent branches
     findall(DaC, 
             (   member(Cand, CandidatesIn),
                 refine_candidate(QuestionNode, NumQs, Cand, da, DaC)
@@ -561,7 +570,12 @@ partition_families(CandidatesIn, NumQs, QuestionNode, DaCandidates, JaCandidates
             (   member(Cand, CandidatesIn),
                 refine_candidate(QuestionNode, NumQs, Cand, ja, JaC)
             ),
-            JaCandidates).
+            JaCandidates),
+    findall(SilentC, 
+            (   member(Cand, CandidatesIn),
+                refine_candidate(QuestionNode, NumQs, Cand, silent, SilentC)
+            ),
+            SilentCandidates).
 
 % refine_candidate(QuestionNode, NumQs, CandidateIn, ExpectedAnswer, CandidateOut)
 % Takes an input candidate (FamilyTemplate, AllowedLangsIn) and an ExpectedAnswer (da/ja).
@@ -581,9 +595,11 @@ refine_candidate(QuestionNode, NumQs, candidate(FamilyTemplate, AllowedLangsIn),
 % Succeeds if there exists a world within FamilyTemplate and Language where the family
 % gives the ExpectedAnswer to QuestionNode.
 can_family_answer_with_lang(QuestionNode, NumQs, FamilyTemplate, Language, ExpectedAnswer) :-
-    generate_worlds_from_templates(FamilyTemplate, NumQs, [Language], World),
-    get_single_world_answer(QuestionNode, NumQs, FamilyTemplate, World, Answer),
-    Answer == ExpectedAnswer.
+    once((
+        generate_worlds_from_templates(FamilyTemplate, NumQs, [Language], World),
+        get_single_world_answer(QuestionNode, NumQs, FamilyTemplate, World, Answer),
+        Answer == ExpectedAnswer
+    )).
 
 get_single_world_answer(q(Pos, Q), _NumQs, _FamilyTemplate, World, Answer) :-
     query_position(Pos, Q, [], World, Answer).
@@ -630,7 +646,7 @@ draw_tree(Tree, Mode) :-
 draw_tree_rec(leaf, _Prefix, _Mode) :-
     writeln('  -> SOLVED').
 
-draw_tree_rec(tree(q(Pos, Q), DaTree, JaTree), Prefix, Mode) :-
+draw_tree_rec(tree(q(Pos, Q), DaTree, JaTree, SilentTree), Prefix, Mode) :-
     (   Mode == raw
     ->  format(string(QStr), "~w", [Q])
     ;   render_question_short(Q, QStr)
@@ -644,8 +660,16 @@ draw_tree_rec(tree(q(Pos, Q), DaTree, JaTree), Prefix, Mode) :-
     draw_tree_rec(DaTree, NextPrefix, Mode),
     
     % Ja Branch
-    format('~w\\ (ja)~n', [Prefix]),
-    draw_tree_rec(JaTree, NextPrefix, Mode).
+    format('~w| (ja)~n', [Prefix]),
+    draw_tree_rec(JaTree, NextPrefix, Mode),
+
+    % Silent Branch
+    format('~w\\ (silent)~n', [Prefix]),
+    draw_tree_rec(SilentTree, NextPrefix, Mode).
+
+% Catch-all for unexpected tree structures
+draw_tree_rec(Other, Prefix, _Mode) :-
+    format('~wERROR: Unrecognized tree structure: ~w~n', [Prefix, Other]).
 
 % Compact question renderer for the ASCII tree
 render_question_short(at_position_question(P, G), S) :-
@@ -676,15 +700,16 @@ solve_and_print_riddle :-
     
     log(info, 'Searching for solution...'),
     
-    is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Generator),
-    
-    log(info, '--- SOLUTION FOUND (Human Readable) ---'),
-    draw_tree(Tree, human),
-    
-    log(info, '--- SOLUTION FOUND (Raw Prolog Object) ---'),
-    draw_tree(Tree, raw),
+    (   is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Generator)
+    ->  log(info, '--- SOLUTION FOUND (Human Readable) ---'),
+        draw_tree(Tree, human),
+        
+        log(info, '--- SOLUTION FOUND (Raw Prolog Object) ---'),
+        draw_tree(Tree, raw),
 
-    print_stats.
+        print_stats
+    ;   log(info, '--- NO SOLUTION FOUND ---')
+    ), !.
 
 print_stats :-
     log(info, '--- SEARCH STATISTICS ---'),
