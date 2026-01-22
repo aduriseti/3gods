@@ -49,54 +49,94 @@ is_god(truly).
 is_god(falsely).
 is_god(random).
 
-query(truly, Question, Path, WorldState, _) :-
-    evaluate(Question, Path, WorldState).
-query(falsely, Question, Path, WorldState, _) :-
-    \+ evaluate(Question, Path, WorldState).
-% Random god ignores question and positions of other gods, its answer is predetermined by WorldState compound term
-query(random, _Question, Path, _WorldState, RndAnsList) :-
-    length(Path, NumPreviousAnswers),
-    CurrentQuestionNum is NumPreviousAnswers + 1,
-    nth1(CurrentQuestionNum, RndAnsList, Answer),
-    Answer. % Succeeds if the Nth answer is 'true'
+% --- 1. THE EVALUATOR: 3-State Logic (True, False, Paradox) ---
 
-% --- The Evaluator ---
+% Performance Hack: Memoize results so we don't re-simulate identical questions
+:- table evaluate_3state/4.
 
-% evaluate(Question, WorldState)
-% This predicate handles each type of question from your grammar explicitly.
-% :- table evaluate/3.
+% evaluate_3state(+Question, +Path, +WorldState, -Result)
+% Result is one of: [true, false, paradox]
 
-% 1. Evaluate logical AND
-evaluate((Q1, Q2), Path, WorldState) :-
-    evaluate(Q1, Path, WorldState),
-    evaluate(Q2, Path, WorldState).
+% A. Logical AND (Kleene Strong Logic)
+evaluate_3state((Q1, Q2), Path, WS, Result) :-
+    evaluate_3state(Q1, Path, WS, R1),
+    evaluate_3state(Q2, Path, WS, R2),
+    logic_and_3state(R1, R2, Result).
 
-% 2. Evaluate logical OR
-evaluate((Q1 ; Q2), Path, WorldState) :-
-    ( evaluate(Q1, Path, WorldState) ; evaluate(Q2, Path, WorldState) ).
+% B. Logical OR (Kleene Strong Logic)
+evaluate_3state((Q1 ; Q2), Path, WS, Result) :-
+    evaluate_3state(Q1, Path, WS, R1),
+    evaluate_3state(Q2, Path, WS, R2),
+    logic_or_3state(R1, R2, Result).
 
-% 3. Evaluate logical XOR
-evaluate((Q1 xor Q2), Path, WorldState) :-
-    ( evaluate(Q1, Path, WorldState), \+ evaluate(Q2, Path, WorldState) )
-    ;
-    ( \+ evaluate(Q1, Path, WorldState), evaluate(Q2, Path, WorldState) ).
+% C. Logical XOR
+evaluate_3state((Q1 xor Q2), Path, WS, Result) :-
+    evaluate_3state(Q1, Path, WS, R1),
+    evaluate_3state(Q2, Path, WS, R2),
+    logic_xor_3state(R1, R2, Result).
 
-% 4. Evaluate state-dependent questions by calling them with the WorldState
-evaluate(at_position_question(P, G), _, WS) :-
-    at_position(P, G, WS). % at_position doesn't need the path
-evaluate(query_position_question(Pos, SubQ), Path, WS) :-
-    % Succeeds if the god at Pos would say 'da' to SubQ
-    query_position(Pos, SubQ, Path, WS, da).
+% D. Nested Questions (Handling Silence)
+evaluate_3state(query_position_question(Pos, SubQ), Path, WS, Result) :-
+    % query_position_3state now returns: da, ja, OR silent
+    query_position_3state(Pos, SubQ, Path, WS, Response),
+    (   Response == da -> Result = true
+    ;   Response == ja -> Result = false
+    ;   Response == silent -> Result = false 
+        % Logic: "Did he say 'da'?" -> No, he was silent. So the statement is False.
+    ).
 
-% 5. Evaluate base cases (these don't depend on the WorldState)
-evaluate(true, _, _) :- true.
-evaluate(fail, _, _) :- fail.
+% E. Base Cases
+evaluate_3state(true, _, _, true).
+evaluate_3state(fail, _, _, false).
+evaluate_3state(at_position_question(P, G), _, WS, Result) :-
+    (at_position(P, G, WS) -> Result = true ; Result = false).
+
+% F. The Paradox Physics (Definitions)
+evaluate_3state(paradox_universal, _, _, paradox).
+evaluate_3state(paradox_falsely, _, _, paradox_falsely). % Pass token to God Logic
+evaluate_3state(paradox_truly, _, _, paradox_truly).     % Pass token to God Logic
 
 % at_position(Position, GodType, WorldState)
-% Succeeds if the god at Position is GodType within the WorldState.
-% Worldstate is w(PosList, Language)
 at_position(Position, God, w(PosList, _)) :-
     member(pos(Position, God, _), PosList).
+
+% --- 2. LOGIC TABLES (Kleene Strong Logic) ---
+
+% AND: False dominates Paradox
+logic_and_3state(true, true, true).
+logic_and_3state(true, false, false).
+logic_and_3state(true, paradox, paradox).
+logic_and_3state(false, _, false).       % Short-circuit
+logic_and_3state(paradox, true, paradox).
+logic_and_3state(paradox, false, false). % Strong Logic
+logic_and_3state(paradox, paradox, paradox).
+% Handle specialized paradox tokens as generic paradoxes for logic ops
+logic_and_3state(paradox_falsely, _, paradox). 
+logic_and_3state(_, paradox_falsely, paradox).
+logic_and_3state(paradox_truly, _, paradox).
+logic_and_3state(_, paradox_truly, paradox).
+
+% OR: True dominates Paradox
+logic_or_3state(true, _, true).          % Short-circuit
+logic_or_3state(false, false, false).
+logic_or_3state(false, true, true).
+logic_or_3state(false, paradox, paradox).
+logic_or_3state(paradox, true, true).    % Strong Logic
+logic_or_3state(paradox, false, paradox).
+logic_or_3state(paradox, paradox, paradox).
+% Handle specialized paradox tokens as generic paradoxes for logic ops
+logic_or_3state(paradox_falsely, _, paradox).
+logic_or_3state(_, paradox_falsely, paradox).
+logic_or_3state(paradox_truly, _, paradox).
+logic_or_3state(_, paradox_truly, paradox).
+
+% XOR
+logic_xor_3state(true, false, true).
+logic_xor_3state(false, true, true).
+logic_xor_3state(true, true, false).
+logic_xor_3state(false, false, false).
+logic_xor_3state(paradox, _, paradox).
+logic_xor_3state(_, paradox, paradox).
 
 % get_utterance(LogicalAnswer, Language, Utterance)
 get_utterance(true, da_yes, da).
@@ -104,20 +144,38 @@ get_utterance(fail, da_yes, ja).
 get_utterance(true, da_no, ja).
 get_utterance(fail, da_no, da).
 
-% query_position now finds the full details for a position and returns the Utterance (da/ja).
-query_position(Position, Question, Path, w(PosList, Language), Utterance) :-
-    % Find the specific pos(...) term for the given Position.
-    member(pos(Position, GodType, RandomAnswer), PosList),
+% --- 3. GOD PSYCHOLOGY: Who Crashes? ---
+
+query_position_3state(Pos, Question, Path, w(PosList, Lang), Utterance) :-
+    member(pos(Pos, GodType, RandomAnswer), PosList),
     
-    (   (GodType == random, length(Path, N), Idx is N + 1, nth1(Idx, RandomAnswer, silent))
+    % 1. Evaluate Logic (Get True/False/Paradox)
+    evaluate_3state(Question, Path, w(PosList, Lang), LogicResult),
+    
+    % 2. Determine Response (Handle Crashes)
+    god_utterance(GodType, LogicResult, RandomAnswer, Path, Lang, Utterance).
+
+% TRULY: Crashes on Paradox
+god_utterance(truly, true, _, _, Lang, U) :- get_utterance(true, Lang, U).
+god_utterance(truly, false, _, _, Lang, U) :- get_utterance(fail, Lang, U).
+god_utterance(truly, paradox, _, _, _, silent).
+god_utterance(truly, paradox_truly, _, _, _, silent). % Specific Trap
+
+% FALSELY: Crashes on Paradox
+god_utterance(falsely, true, _, _, Lang, U) :- get_utterance(fail, Lang, U).
+god_utterance(falsely, false, _, _, Lang, U) :- get_utterance(true, Lang, U).
+god_utterance(falsely, paradox, _, _, _, silent).
+god_utterance(falsely, paradox_falsely, _, _, _, silent). % Specific Trap
+
+% RANDOM: Immune (Standard Physics)
+% Ignores 'LogicResult' entirely and uses 'RandomAnswer' (the coin flip)
+god_utterance(random, _, RandomAnswers, Path, Lang, Utterance) :-
+    length(Path, N),
+    Idx is N + 1,
+    nth1(Idx, RandomAnswers, Ans),
+    (   Ans == silent
     ->  Utterance = silent
-    ;   % Call the updated query/4 predicate to get Logical Result
-        ( query(GodType, Question, Path, w(PosList, Language), RandomAnswer)
-        -> LogicalAns = true
-        ;  LogicalAns = fail
-        ),
-        % Map Logical Result to Utterance based on Language
-        get_utterance(LogicalAns, Language, Utterance)
+    ;   get_utterance(Ans, Lang, Utterance)
     ).
 
 % --- The Grammar ---
@@ -206,7 +264,7 @@ generate_pos_list([pos(P, God, _)|T], NumQs, [pos(P, God, RndAns)|W]) :-
 get_answer_path(Tree, World, Path) :- get_answer_path_recursive(Tree, World, [], Path).
 get_answer_path_recursive(leaf, _, _, []).
 get_answer_path_recursive(tree(q(Pos, Q), DaT, JaT, SilentT), World, PathSoFar, [Ans|Rest]) :-
-    query_position(Pos, Q, PathSoFar, World, Ans), % Ans will be da, ja, or silent
+    query_position_3state(Pos, Q, PathSoFar, World, Ans), % Ans will be da, ja, or silent
     (
         Ans = da
     ->  get_answer_path_recursive(DaT, World, [da|PathSoFar], Rest)
@@ -408,14 +466,17 @@ get_evaluate_signature(Q, NumQs, Families, sig(LogicalSig, UtteranceSig)) :-
 
 % Helper to get the set of unique answers a specific family gives to Q
 get_family_eval_set(Q, NumQs, candidate(FamilyTemplate, AllowedLangs), pair(LogicalSet, UtteranceSet)) :-
-    findall(pair(Ans, Token),
+    findall(pair(AnsToken, Utterance),
             (   generate_worlds_from_templates(FamilyTemplate, NumQs, AllowedLangs, World),
-                ( evaluate(Q, [], World) -> Ans=true ; Ans=fail ),
+                evaluate_3state(Q, [], World, Val),
+                (Val == true -> AnsToken=true ; Val == false -> AnsToken=fail ; AnsToken=paradox),
                 World = w(_, Lang),
-                get_utterance(Ans, Lang, Token)
+                (Val == true -> get_utterance(true, Lang, Utterance)
+                ; Val == false -> get_utterance(fail, Lang, Utterance)
+                ; Utterance = silent
+                )
             ),
             RawPairs),
-    % Split pairs into two lists
     maplist(arg(1), RawPairs, LogRaw),
     maplist(arg(2), RawPairs, UttRaw),
     sort(LogRaw, LogicalSet),
@@ -594,21 +655,21 @@ refine_candidate(QuestionNode, NumQs, candidate(FamilyTemplate, AllowedLangsIn),
 % can_family_answer_with_lang(QuestionNode, NumQs, FamilyTemplate, Language, ExpectedAnswer)
 % Succeeds if there exists a world within FamilyTemplate and Language where the family
 % gives the ExpectedAnswer to QuestionNode.
-can_family_answer_with_lang(QuestionNode, NumQs, FamilyTemplate, Language, ExpectedAnswer) :-
+can_family_answer_with_lang(q(Pos, Q), NumQs, FamilyTemplate, Language, ExpectedAnswer) :-
     once((
         generate_worlds_from_templates(FamilyTemplate, NumQs, [Language], World),
-        get_single_world_answer(QuestionNode, NumQs, FamilyTemplate, World, Answer),
+        query_position_3state(Pos, Q, [], World, Answer),
         Answer == ExpectedAnswer
     )).
 
 get_single_world_answer(q(Pos, Q), _NumQs, _FamilyTemplate, World, Answer) :-
-    query_position(Pos, Q, [], World, Answer).
+    query_position_3state(Pos, Q, [], World, Answer).
 
 
 % Succeeds if a family can EVER produce 'Answer' (da/ja) for the given question.
 family_answers_question(q(Pos, Q), NumQs, candidate(FamilyTemplate, AllowedLangs), Answer) :-
     generate_worlds_from_templates(FamilyTemplate, NumQs, AllowedLangs, World),
-    query_position(Pos, Q, [], World, Ans), % Returns da/ja
+    query_position_3state(Pos, Q, [], World, Ans),
     Ans == Answer,
     !. % We only need to find one such world, not all of them.
 

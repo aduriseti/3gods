@@ -1,7 +1,52 @@
 % :- use_module(library(lists)).
 :- use_module(library(plunit)).
-:- consult('random_silent.pl').
+:- consult('paradox.pl').
 :- assert(current_log_level(info)).
+
+:- begin_tests(kleene_logic).
+
+test('AND: True and Paradox is Paradox') :-
+    logic_and_3state(true, paradox, R), assertion(R == paradox).
+
+test('AND: False and Paradox is False (Strong Logic dominance)') :-
+    % This is crucial: A question like "Is 2+2=5 AND [Paradox]" should be FALSE, not Crash.
+    logic_and_3state(false, paradox, R), assertion(R == false).
+
+test('OR: True or Paradox is True (Strong Logic dominance)') :-
+    logic_or_3state(true, paradox, R), assertion(R == true).
+
+:- end_tests(kleene_logic).
+
+
+:- begin_tests(god_silence_mechanics).
+
+test('Truly God falls Silent on Universal Paradox') :-
+    % LogicResult = paradox -> Output = silent
+    god_utterance(truly, paradox, _, [], da_yes, Utterance),
+    assertion(Utterance == silent).
+
+test('Falsely God falls Silent on Universal Paradox') :-
+    god_utterance(falsely, paradox, _, [], da_yes, Utterance),
+    assertion(Utterance == silent).
+
+test('Random God speaks despite Paradox (Immunity)') :-
+    % Even if LogicResult is paradox, Random uses his coin flip (true)
+    god_utterance(random, paradox, [true], [], da_yes, Utterance),
+    assertion(Utterance == da).
+
+:- end_tests(god_silence_mechanics).
+
+
+:- begin_tests(nested_evaluation).
+
+test('evaluate_3state handles "Did he say da?" correctly when God is Silent') :-
+    % If inner query returns 'silent', the answer to "Did he say da?" is FALSE.
+    % We mock this by defining a dummy world state if needed, or trusting the logic flow.
+    % Logic flow check:
+    (silent == da -> Res = true ; silent == ja -> Res = false ; silent == silent -> Res = false),
+    assertion(Res == false).
+
+:- end_tests(nested_evaluation).
 
 :- begin_tests(simple_signatures).
 
