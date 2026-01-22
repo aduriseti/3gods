@@ -4,7 +4,7 @@ iamrunningthelatestversion.
 
 % --- Logging Infrastructure ---
 :- dynamic current_log_level/1.
-current_log_level(debug).
+current_log_level(info).
 
 level_value(debug, 10).
 level_value(info, 20).
@@ -506,7 +506,7 @@ find_pruning_tree(_, 0, _, _, _, Candidates, leaf) :- % Base case for depth
     (length(Candidates, 1) -> true ; !, fail). % Ran out of depth
 
 % --- Recursive Pruning Step (Corrected) ---
-find_pruning_tree_worker(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, tree(q(Pos, Q), DaTree, JaTree, SilentTree)) :-
+find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFamilies, Candidates, tree(q(Pos, Q), DaTree, JaTree, SilentTree)) :-
     CurrentDepth > 0,
     NextDepth is CurrentDepth - 1,
 
@@ -547,11 +547,9 @@ find_pruning_tree_worker(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, Canon
     log(info, 'commit(q: ~w)', [q(Pos, Q)]),
 
     % --- Recurse ---
-    with_ancestor(CurrentDepth, q(Pos, Q), (
-        find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, DaCandidates, DaTree),
-        find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, JaCandidates, JaTree),
-        find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, SilentCandidates, SilentTree)
-    )).
+    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, DaCandidates, DaTree),
+    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, JaCandidates, JaTree),
+    find_pruning_tree(TotalNumQs, NextDepth, MaxQComplexity, NumPos, CanonicalFamilies, SilentCandidates, SilentTree).
 
 % --- Helpers required by the new algorithm ---
 
@@ -597,9 +595,11 @@ refine_candidate(QuestionNode, NumQs, candidate(FamilyTemplate, AllowedLangsIn),
 % Succeeds if there exists a world within FamilyTemplate and Language where the family
 % gives the ExpectedAnswer to QuestionNode.
 can_family_answer_with_lang(QuestionNode, NumQs, FamilyTemplate, Language, ExpectedAnswer) :-
-    generate_worlds_from_templates(FamilyTemplate, NumQs, [Language], World),
-    get_single_world_answer(QuestionNode, NumQs, FamilyTemplate, World, Answer),
-    Answer == ExpectedAnswer.
+    once((
+        generate_worlds_from_templates(FamilyTemplate, NumQs, [Language], World),
+        get_single_world_answer(QuestionNode, NumQs, FamilyTemplate, World, Answer),
+        Answer == ExpectedAnswer
+    )).
 
 get_single_world_answer(q(Pos, Q), _NumQs, _FamilyTemplate, World, Answer) :-
     query_position(Pos, Q, [], World, Answer).
