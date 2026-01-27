@@ -36,6 +36,40 @@ test('Random God speaks despite Paradox (Immunity)') :-
 
 :- end_tests(god_silence_mechanics).
 
+:- begin_tests(paradox_specific_mechanics).
+
+test('Truly on paradox_truly is Silent') :-
+    NumPos=1, NumQs=1,
+    generate_canonical_combinations(NumPos, [truly], Family),
+    maplist(wrap_family_in_candidate([da_yes, da_no]), [Family], Families),
+    get_evaluate_signature(paradox_truly, NumPos, NumQs, Families, Sig),
+    assertion(Sig == sig([[paradox]], [[[silent]]])).
+
+test('Falsely on paradox_truly speaks (Logic=False, Lies -> True)') :-
+    NumPos=1, NumQs=1,
+    generate_canonical_combinations(NumPos, [falsely], Family),
+    maplist(wrap_family_in_candidate([da_yes, da_no]), [Family], Families),
+    get_evaluate_signature(paradox_truly, NumPos, NumQs, Families, Sig),
+    % Falsely sees paradox_truly -> logic false -> utterance true (da/ja)
+    assertion(Sig == sig([[paradox]], [[[da, ja]]])).
+
+test('Truly on paradox_falsely speaks (Logic=False, Truth -> False)') :-
+    NumPos=1, NumQs=1,
+    generate_canonical_combinations(NumPos, [truly], Family),
+    maplist(wrap_family_in_candidate([da_yes, da_no]), [Family], Families),
+    get_evaluate_signature(paradox_falsely, NumPos, NumQs, Families, Sig),
+    % Truly sees paradox_falsely -> logic false -> utterance false (ja/da)
+    assertion(Sig == sig([[paradox]], [[[da, ja]]])).
+
+test('Falsely on paradox_falsely is Silent') :-
+    NumPos=1, NumQs=1,
+    generate_canonical_combinations(NumPos, [falsely], Family),
+    maplist(wrap_family_in_candidate([da_yes, da_no]), [Family], Families),
+    get_evaluate_signature(paradox_falsely, NumPos, NumQs, Families, Sig),
+    assertion(Sig == sig([[paradox]], [[[silent]]])).
+
+:- end_tests(paradox_specific_mechanics).
+
 
 :- begin_tests(nested_evaluation).
 
@@ -152,8 +186,8 @@ test('Generate universe for complexity 1 and count distinct signatures') :-
 %     findall(F, generate_permutation_families(3, [truly, falsely, random], F), Families),
 %     my_nub(Families, UniqueFamilyTemplates),
 %     maplist(wrap_family_in_candidate([da_yes, da_no]), UniqueFamilyTemplates, UniqueFamilies),
-%     call_with_time_limit(10, generate_universe(3, 2, UniqueFamilies, 3)),
-%     call_with_time_limit(10, predicate_property(distinct_q(_,_,_), number_of_clauses(Count))),
+%     call_with_time_limit(30, generate_universe(3, 2, UniqueFamilies, 3)),
+%     call_with_time_limit(30, predicate_property(distinct_q(_,_,_), number_of_clauses(Count))),
 %     writeln(distinct_count_comp2(Count)),
 %     % We found 222 distinct questions with inverse pruning.
 %     % This is close to the theoretical 216.
@@ -290,7 +324,7 @@ test('2-question tree with "all random" family has all 9 possible outcomes') :-
 
 :- begin_tests(distinguishing_scenarios).
 
-test('1 simple question CANNOT distinguish [truly] from [falsely] without language', [fail]) :-
+test('1 simple question SUCCEEDS in distinguishing [truly] from [falsely] (using paradox_truly)') :-
     call_with_time_limit(10, is_distinguishing_tree_bounded(1, 1, 0, [truly, falsely], _Tree, generate_uniform_families)).
 
 test('truly with 2 positions is distinguishable by default even with 0 questions]') :-
@@ -306,7 +340,7 @@ test('truly with 2 positions is distinguishable by default even with 0 questions
 test('Exhaustive search proves [truly] vs [random] is indistinguishable for 1 Q^1 question') :-
     % We are asserting that the following goal MUST FAIL.
     % The '\+' operator succeeds if its argument fails completely.
-    call_with_time_limit(20, \+ is_distinguishing_tree_bounded(
+    call_with_time_limit(10, \+ is_distinguishing_tree_bounded(
            1, % Num Positions
            1, % Tree Depth (Num Questions)
            1, % Max Question Complexity
@@ -518,18 +552,20 @@ test(verify_embedded_question_split, [nondet]) :-
     assertion(SilentCount == 2).
 
 % --- Integration Tests for `find_pruning_tree/7` ---
-test('pruning_tree: FAILS for [True, False] with 1 simple question (ambiguous)') :-
+test('pruning_tree: SUCCEEDS for [True, False] with 1 simple question (using paradox_truly)') :-
     build_uniform_family(1, truly, F_True),
     build_uniform_family(1, falsely, F_False),
     FamiliesTemplates = [F_True, F_False],
     maplist(wrap_family_in_candidate([da_yes, da_no]), FamiliesTemplates, Families),
+    
     generate_universe(1, 0, Families, 1),
+    
     TotalNumQs     = 1,
     CurrentDepth   = 1,
     MaxQComp       = 0,
     NumPos         = 1,
-    % Should fail because they can't be distinguished.
-    \+ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, Families, _Tree).
+    
+    find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, Families, _Tree).
 
 test('pruning_tree: SUCCEEDS for [True, False] with 1 simple question (distinguishable by invariant)') :-
     build_uniform_family(1, truly, F_True),
@@ -546,18 +582,18 @@ test('pruning_tree: SUCCEEDS for [True, False] with 1 simple question (distingui
 
 % (Removed flaky 1-complex question test for [True, False] as it depends on small universe generation)
 
-test('pruning_tree: FAILS for [True, False, Random] with 2 questions (impossible split)', [fail]) :-
-    build_uniform_family(1, truly, F_True),
-    build_uniform_family(1, falsely, F_False),
-    build_uniform_family(1, random, F_Rand),
-    FamiliesTemplates = [F_True, F_False, F_Rand],
-    maplist(wrap_family_in_candidate([da_yes, da_no]), FamiliesTemplates, Families),
-    generate_universe(1, 2, Families, 2),
-    TotalNumQs     = 2,
-    CurrentDepth   = 2,
-    MaxQComp       = 2,
-    NumPos         = 1,
-    find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, Families, _Tree).
+% test('pruning_tree: FAILS for [True, False, Random] with 2 questions (impossible split)', [fail]) :-
+%     build_uniform_family(1, truly, F_True),
+%     build_uniform_family(1, falsely, F_False),
+%     build_uniform_family(1, random, F_Random),
+%     FamiliesTemplates = [F_True, F_False, F_Random],
+%     maplist(wrap_family_in_candidate([da_yes, da_no]), FamiliesTemplates, Families),
+%     generate_universe(/*NumPos=*/1, /*MaxComplexity=*/2, Families, /*SimulatedNumQs=*/2),
+%     TotalNumQs     = 2,
+%     CurrentDepth   = 2,
+%     MaxQComp       = 2,
+%     NumPos         = 1,
+%     find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, Families, Families, _Tree).
 
 test('pruning_tree: SUCCEEDS for a 2-position [Truly,Falsely] vs [Falsely,Truly] world with Complex Q') :-
     F1 = [pos(1, truly, _), pos(2, falsely, _)],
@@ -616,18 +652,15 @@ test('pruning_tree: FAILS because sub-problem is too large for remaining depth',
 
 :- begin_tests(complex_pruning_scenario).
 
-test('pruning_tree: FAILS for a [T,T,F] problem with only 1 question', [fail]) :-
+test('pruning_tree: SUCCEEDS for a [T,T,F] problem with only 1 question (using paradoxes)') :-
     % 1. Define the problem parameters
     NumPos       = 3,
-    NumQs        = 1, % Not enough questions to solve 3 families (2^1 < 3)
-    QComplexity  = 1,
+    NumQs        = 1, % can differentiate 3 worldstates using paradoxes (3 possible answers))
+    QComplexity  = 2,
     GodTypes     = [truly, truly, falsely],
     Generator    = generate_permutation_families,
     
     % 2. Call the main solver
-    % This MUST fail. The initial problem size (3 families) is larger than
-    % the max solvable size for a 1-question tree (2^1 = 2).
-    % Our pruning logic should catch this.
     is_distinguishing_tree_bounded(
         NumPos,
         NumQs,

@@ -139,6 +139,10 @@ logic_xor_3state(true, true, false).
 logic_xor_3state(false, false, false).
 logic_xor_3state(paradox, _, paradox).
 logic_xor_3state(_, paradox, paradox).
+logic_xor_3state(paradox_falsely, _, paradox).
+logic_xor_3state(_, paradox_falsely, paradox).
+logic_xor_3state(paradox_truly, _, paradox).
+logic_xor_3state(_, paradox_truly, paradox).
 
 % get_utterance(LogicalAnswer, Language, Utterance)
 get_utterance(true, da_yes, da).
@@ -162,12 +166,14 @@ god_utterance(truly, true, _, _, Lang, U) :- get_utterance(true, Lang, U).
 god_utterance(truly, false, _, _, Lang, U) :- get_utterance(fail, Lang, U).
 god_utterance(truly, paradox, _, _, _, silent).
 god_utterance(truly, paradox_truly, _, _, _, silent). % Specific Trap
+god_utterance(truly, paradox_falsely, _, _, Lang, U) :- get_utterance(fail, Lang, U). % Treat as false
 
 % FALSELY: Crashes on Paradox
 god_utterance(falsely, true, _, _, Lang, U) :- get_utterance(fail, Lang, U).
 god_utterance(falsely, false, _, _, Lang, U) :- get_utterance(true, Lang, U).
 god_utterance(falsely, paradox, _, _, _, silent).
 god_utterance(falsely, paradox_falsely, _, _, _, silent). % Specific Trap
+god_utterance(falsely, paradox_truly, _, _, Lang, U) :- get_utterance(true, Lang, U). % Treat as false -> Lies -> True
 
 % RANDOM: Immune (Standard Physics)
 % Ignores 'LogicResult' entirely and uses 'RandomAnswer' (the coin flip)
@@ -185,6 +191,8 @@ god_utterance(random, _, RandomAnswers, Path, Lang, Utterance) :-
 is_question(_, _, true).
 is_question(_, _, fail).
 is_question(_, _, paradox_universal).
+is_question(_, _, paradox_truly).
+is_question(_, _, paradox_falsely).
 
 % Base Case 2: Questions about the world are allowed.
 is_question(NumPos, _, at_position_question(Pos, God)) :-
@@ -375,10 +383,12 @@ generate_base_cases(NumPos, Questions) :-
     findall(true, true, L1),
     findall(fail, true, L2),
     findall(paradox_universal, true, L3),
+    findall(paradox_truly, true, L3a),
+    findall(paradox_falsely, true, L3b),
     findall(at_position_question(Pos, God),
             (is_position(NumPos, Pos), is_god(God)),
             L4),
-    append([L1, L2, L3, L4], Questions).
+    append([L1, L2, L3, L3a, L3b, L4], Questions).
 
 % Generates candidate questions at a specific complexity C > 0
 generate_candidates_at_complexity(C, NumPos, Candidates) :-

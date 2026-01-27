@@ -83,6 +83,8 @@ render_question_short((Q1 xor Q2), S) :-
 render_question_short(true, "True").
 render_question_short(fail, "False").
 render_question_short(paradox_universal, "Paradox").
+render_question_short(paradox_truly, "Paradox(Truly)").
+render_question_short(paradox_falsely, "Paradox(Falsely)").
 
 % render_question(QuestionTerm, OutputString)
 % Translates a question data structure into an English string.
