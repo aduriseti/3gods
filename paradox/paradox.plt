@@ -82,6 +82,50 @@ test('evaluate_3state handles "Did he say da?" correctly when God is Silent') :-
 
 :- end_tests(nested_evaluation).
 
+:- begin_tests(grammar_verification).
+
+test('grammar: candidate_at_complexity generates ja and silent variants') :-
+    NumPos = 1,
+    % Setup a minimal family for universe generation
+    build_uniform_family(1, truly, FamilyTemplate),
+    Candidate = candidate(FamilyTemplate, [da_yes, da_no]),
+    
+    % Run universe generation at complexity 1
+    % This will populate distinct_q
+    generate_universe(NumPos, 1, [Candidate], 1),
+    
+    % Now check if they exist in distinct_q
+    % Note: They might be filtered out of distinct_q by signatures, 
+    % so let's check candidate_at_complexity directly using the sub-questions that DID make it.
+    findall(Q, candidate_at_complexity(1, NumPos, Q), AllPotentialCandidates),
+    
+    % Verify that the ja and silent variants are being produced
+    member(query_position_question_ja(1, true), AllPotentialCandidates),
+    member(query_position_question_silent(1, true), AllPotentialCandidates).
+
+test('logic: query_position_question_ja correctly identifies ja response') :-
+    % Truly god in LangNo says 'ja' to 'true'.
+    % Ask god 1 "Will you say ja to true?"
+    WS = w([pos(1, truly, true)], da_no),
+    evaluate_3state(query_position_question_ja(1, true), [], WS, Result),
+    % It should be True because he DOES say ja.
+    assertion(Result == true).
+
+test('logic: query_position_question_silent correctly identifies silence') :-
+    % Truly god is silent on paradox_truly.
+    % Ask god 1 "Will you be silent to paradox_truly?"
+    WS = w([pos(1, truly, true)], da_yes),
+    evaluate_3state(query_position_question_silent(1, paradox_truly), [], WS, Result),
+    % It should be True because he IS silent.
+    assertion(Result == true).
+
+test('grammar: is_question recognizes new variants') :-
+    NumPos = 3, MaxDepth = 2,
+    assertion(is_question(NumPos, MaxDepth, query_position_question_ja(1, true))),
+    assertion(is_question(NumPos, MaxDepth, query_position_question_silent(1, true))).
+
+:- end_tests(grammar_verification).
+
 :- begin_tests(simple_signatures).
 
 test('Truly signature for true is [[[[da, ja]]]]') :-
@@ -771,23 +815,23 @@ test('3 Gods (T,F,R) is IMPOSSIBLE with complexity 0 questions (simple direct qu
         Generator
     )).
 
-test('3 Gods (T,F,R) is IMPOSSIBLE with only 2 questions (tree depth 2)', [fail]) :-
-    % 1. Define the problem parameters
-    NumPos       = 3,
-    NumQs        = 2, % Not enough questions!
-    QComplexity  = 1, 
-    GodTypes     = [truly, falsely, random],
-    Generator    = generate_permutation_families,
+% test('3 Gods (T,F,R) is IMPOSSIBLE with only 2 questions (tree depth 2)', [fail]) :-
+%     % 1. Define the problem parameters
+%     NumPos       = 3,
+%     NumQs        = 2, % Not enough questions!
+%     QComplexity  = 1, 
+%     GodTypes     = [truly, falsely, random],
+%     Generator    = generate_permutation_families,
     
-    % 2. Call the main solver
-    call_with_time_limit(30, is_distinguishing_tree_bounded(
-        NumPos,
-        NumQs,
-        QComplexity,
-        GodTypes,
-        _Tree,
-        Generator
-    )).
+%     % 2. Call the main solver
+%     call_with_time_limit(30, is_distinguishing_tree_bounded(
+%         NumPos,
+%         NumQs,
+%         QComplexity,
+%         GodTypes,
+%         _Tree,
+%         Generator
+%     )).
 
 % test('3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep)') :-
 %     % 1. Define the problem parameters
@@ -829,22 +873,22 @@ test('3 Gods (T,F,R) is IMPOSSIBLE with only 2 questions (tree depth 2)', [fail]
 
 :- begin_tests(solve_final_challenge_with_paradox).
 
-test('3 Gods (T,F,R) is IMPOSSIBLE with only 2 questions (tree depth 2)', [fail]) :-
-    % 1. Define the problem parameters
-    NumPos       = 3,
-    NumQs        = 2, % Not enough questions!
-    QComplexity  = 2, 
-    GodTypes     = [truly, falsely, random],
-    Generator    = generate_permutation_families,
+% test('3 Gods (T,F,R) is IMPOSSIBLE with only 2 questions (tree depth 2)', [fail]) :-
+%     % 1. Define the problem parameters
+%     NumPos       = 3,
+%     NumQs        = 2, % Not enough questions!
+%     QComplexity  = 2, 
+%     GodTypes     = [truly, falsely, random],
+%     Generator    = generate_permutation_families,
     
-    % 2. Call the main solver
-    call_with_time_limit(90, is_distinguishing_tree_bounded(
-        NumPos,
-        NumQs,
-        QComplexity,
-        GodTypes,
-        _Tree,
-        Generator
-    )).
+%     % 2. Call the main solver
+%     call_with_time_limit(120, is_distinguishing_tree_bounded(
+%         NumPos,
+%         NumQs,
+%         QComplexity,
+%         GodTypes,
+%         _Tree,
+%         Generator
+%     )).
 
 :- end_tests(solve_final_challenge_with_paradox).

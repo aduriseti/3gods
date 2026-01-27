@@ -78,13 +78,25 @@ evaluate_3state((Q1 xor Q2), Path, WS, Result) :-
     logic_xor_3state(R1, R2, Result).
 
 % D. Nested Questions (Handling Silence)
+% Default: "Will they say 'da'?"
 evaluate_3state(query_position_question(Pos, SubQ), Path, WS, Result) :-
-    % query_position_3state now returns: da, ja, OR silent
     query_position_3state(Pos, SubQ, Path, WS, Response),
     (   Response == da -> Result = true
-    ;   Response == ja -> Result = false
-    ;   Response == silent -> Result = false 
-        % Logic: "Did he say 'da'?" -> No, he was silent. So the statement is False.
+    ;   Result = false 
+    ).
+
+% "Will they say 'ja'?"
+evaluate_3state(query_position_question_ja(Pos, SubQ), Path, WS, Result) :-
+    query_position_3state(Pos, SubQ, Path, WS, Response),
+    (   Response == ja -> Result = true
+    ;   Result = false
+    ).
+
+% "Will they be silent?"
+evaluate_3state(query_position_question_silent(Pos, SubQ), Path, WS, Result) :-
+    query_position_3state(Pos, SubQ, Path, WS, Response),
+    (   Response == silent -> Result = true
+    ;   Result = false
     ).
 
 % E. Base Cases
@@ -201,6 +213,18 @@ is_question(NumPos, _, at_position_question(Pos, God)) :-
 % Base Case 3: Questions about how gods at positions might respond to questions are allowed.
 is_question(NumPos, MaxQDepth, query_position_question(Pos, Q)) :-
     MaxQDepth > 0, % Only recurse if we have budget
+    NextQDepth is MaxQDepth - 1,
+    is_position(NumPos, Pos),
+    is_question(NumPos, NextQDepth, Q).
+
+is_question(NumPos, MaxQDepth, query_position_question_ja(Pos, Q)) :-
+    MaxQDepth > 0,
+    NextQDepth is MaxQDepth - 1,
+    is_position(NumPos, Pos),
+    is_question(NumPos, NextQDepth, Q).
+
+is_question(NumPos, MaxQDepth, query_position_question_silent(Pos, Q)) :-
+    MaxQDepth > 0,
     NextQDepth is MaxQDepth - 1,
     is_position(NumPos, Pos),
     is_question(NumPos, NextQDepth, Q).
@@ -395,6 +419,16 @@ generate_candidates_at_complexity(C, NumPos, Candidates) :-
     findall(Q, candidate_at_complexity(C, NumPos, Q), Candidates).
 
 candidate_at_complexity(C, NumPos, query_position_question(Pos, SubQ)) :-
+    SubC is C - 1,
+    distinct_q(SubQ, _, SubC),
+    is_position(NumPos, Pos).
+
+candidate_at_complexity(C, NumPos, query_position_question_ja(Pos, SubQ)) :-
+    SubC is C - 1,
+    distinct_q(SubQ, _, SubC),
+    is_position(NumPos, Pos).
+
+candidate_at_complexity(C, NumPos, query_position_question_silent(Pos, SubQ)) :-
     SubC is C - 1,
     distinct_q(SubQ, _, SubC),
     is_position(NumPos, Pos).
@@ -608,7 +642,7 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
     (   ( DaSize > MaxSize ; JaSize > MaxSize ; SilentSize > MaxSize )
     ->  % This branch is taken if the sub-problem is too big
         inc_pruned(CurrentDepth),
-        log(debug, 'prune(reason: sub-problem too large)'),
+        log(debug, 'prune(reason: sub-problem too large [da: ~w, ja: ~w, silent: ~w] - [MaxSize: ~w])', [DaSize, JaSize, SilentSize, MaxSize]),
         fail % Just fail, allowing Prolog to backtrack to the 'between' loop
     ;   % This branch is taken if the check passes
         true

@@ -1,0 +1,43 @@
+IMPOSSIBILITY PROOF FOR 2-QUESTION SOLUTION
+
+Goal: Distinguish 6 permutations of [T, F, R] using 2 questions.
+Structure: A tree of depth 2.
+Root Question -> 3 Branches (Da, Ja, Silent).
+Each Branch must handle a subset of families.
+Constraint: For the remaining depth (1), the maximum distinguishable set size is 3^1 = 3.
+So each Branch must have <= 3 families.
+
+State of the World (asking God at Position 1):
+- 2 Families have Random at Pos 1 (e.g. [R, T, F], [R, F, T]).
+  - Let's call these the "Noise" families (N=2).
+  - The Random God can produce 'da', 'ja', and 'silent'.
+  - Therefore, these 2 Noise families appear in ALL THREE branches.
+
+- 4 Families have Deterministic Gods at Pos 1 (T or F).
+  - Let's call these the "Signal" families (S=4).
+  - Each Signal family maps to exactly one branch (Da, Ja, or Silent) based on the question logic.
+
+Let x, y, z be the number of Signal families in the Da, Ja, and Silent branches respectively.
+We know x + y + z = 4 (Total Signal families).
+
+The size of each bucket is:
+Size(Da) = 2 (Noise) + x
+Size(Ja) = 2 (Noise) + y
+Size(Silent) = 2 (Noise) + z
+
+We require all sizes <= 3.
+2 + x <= 3 => x <= 1
+2 + y <= 3 => y <= 1
+2 + z <= 3 => z <= 1
+
+Summing these inequalities:
+x + y + z <= 1 + 1 + 1
+x + y + z <= 3
+
+But we know x + y + z = 4.
+4 <= 3 is FALSE.
+
+Conclusion:
+It is mathematically impossible to partition the 6 families into buckets of size <= 3 with a single question to a single god, because the Random God forces a baseline of 2 families in every bucket, leaving space for only 1 deterministic family per bucket (total 3), but we have 4 to distribute.
+
+No grammar extension can solve this under the standard rules.

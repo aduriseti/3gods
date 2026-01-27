@@ -72,6 +72,12 @@ render_question_short(at_position_question(P, G), S) :-
 render_question_short(query_position_question(P, SubQ), S) :-
     render_question_short(SubQ, SubS),
     format(string(S), "If G~w asked '~s', say da", [P, SubS]).
+render_question_short(query_position_question_ja(P, SubQ), S) :-
+    render_question_short(SubQ, SubS),
+    format(string(S), "If G~w asked '~s', say ja", [P, SubS]).
+render_question_short(query_position_question_silent(P, SubQ), S) :-
+    render_question_short(SubQ, SubS),
+    format(string(S), "If G~w asked '~s', be silent", [P, SubS]).
 render_question_short((Q1, Q2), S) :-
     render_question_short(Q1, S1),
     render_question_short(Q2, S2),
@@ -101,12 +107,19 @@ render_question(at_position_question(Pos, God), String) :-
     format(string(String), "Is the god at position `~w` the `~w` god?", [Pos, God]).
 
 render_question(query_position_question(Pos, Q), String) :-
-    % 1. Get the raw, un-indented multi-line string for the sub-question
     render_question(Q, RawSubString),
-    % 2. Indent the entire sub-string block
     indent_lines(RawSubString, IndentedSubString),
-    % 3. Assemble the final string
-    format(string(String), "Would the god at `~w` say 'yes' to the question:~n~s", [Pos, IndentedSubString]).
+    format(string(String), "Would the god at `~w` say 'da' to the question:~n~s", [Pos, IndentedSubString]).
+
+render_question(query_position_question_ja(Pos, Q), String) :-
+    render_question(Q, RawSubString),
+    indent_lines(RawSubString, IndentedSubString),
+    format(string(String), "Would the god at `~w` say 'ja' to the question:~n~s", [Pos, IndentedSubString]).
+
+render_question(query_position_question_silent(Pos, Q), String) :-
+    render_question(Q, RawSubString),
+    indent_lines(RawSubString, IndentedSubString),
+    format(string(String), "Would the god at `~w` be silent to the question:~n~s", [Pos, IndentedSubString]).
 
 render_question((Q1, Q2), String) :-
     render_question(Q1, RawSubString1),
