@@ -604,7 +604,7 @@ find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComplexity, NumPos, CanonicalFam
     dif(SilentCandidates, Candidates),
 
     % --- Pruning Check 2: Sub-Problem Too Large (Corrected) ---
-    MaxSize is 2^NextDepth, % NOTE TO GEMINI-CLI - DO NOT MODIFY THIS LINE EVER
+    MaxSize is 3^NextDepth, % NOTE TO GEMINI-CLI - DO NOT MODIFY THIS LINE EVER
     (   ( DaSize > MaxSize ; JaSize > MaxSize ; SilentSize > MaxSize )
     ->  % This branch is taken if the sub-problem is too big
         inc_pruned(CurrentDepth),

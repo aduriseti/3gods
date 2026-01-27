@@ -1,7 +1,7 @@
 % :- use_module(library(lists)).
 :- use_module(library(plunit)).
 :- consult('paradox.pl').
-:- assert(current_log_level(info)).
+:- assert(current_log_level(debug)).
 
 :- begin_tests(kleene_logic).
 
@@ -771,23 +771,23 @@ test('3 Gods (T,F,R) is IMPOSSIBLE with complexity 0 questions (simple direct qu
         Generator
     )).
 
-% test('3 Gods (T,F,R) is IMPOSSIBLE with only 2 questions (tree depth 2)', [fail]) :-
-%     % 1. Define the problem parameters
-%     NumPos       = 3,
-%     NumQs        = 2, % Not enough questions!
-%     QComplexity  = 1, 
-%     GodTypes     = [truly, falsely, random],
-%     Generator    = generate_permutation_families,
+test('3 Gods (T,F,R) is IMPOSSIBLE with only 2 questions (tree depth 2)', [fail]) :-
+    % 1. Define the problem parameters
+    NumPos       = 3,
+    NumQs        = 2, % Not enough questions!
+    QComplexity  = 1, 
+    GodTypes     = [truly, falsely, random],
+    Generator    = generate_permutation_families,
     
-%     % 2. Call the main solver
-%     call_with_time_limit(30, is_distinguishing_tree_bounded(
-%         NumPos,
-%         NumQs,
-%         QComplexity,
-%         GodTypes,
-%         _Tree,
-%         Generator
-%     )).
+    % 2. Call the main solver
+    call_with_time_limit(30, is_distinguishing_tree_bounded(
+        NumPos,
+        NumQs,
+        QComplexity,
+        GodTypes,
+        _Tree,
+        Generator
+    )).
 
 % test('3 Gods (T,F,R) is SOLVABLE with complexity 2 questions (3 questions deep)') :-
 %     % 1. Define the problem parameters
@@ -826,3 +826,25 @@ test('3 Gods (T,F,R) is IMPOSSIBLE with complexity 0 questions (simple direct qu
 %     )).
 
 :- end_tests(final_challenge).
+
+:- begin_tests(solve_final_challenge_with_paradox).
+
+test('3 Gods (T,F,R) is IMPOSSIBLE with only 2 questions (tree depth 2)', [fail]) :-
+    % 1. Define the problem parameters
+    NumPos       = 3,
+    NumQs        = 2, % Not enough questions!
+    QComplexity  = 2, 
+    GodTypes     = [truly, falsely, random],
+    Generator    = generate_permutation_families,
+    
+    % 2. Call the main solver
+    call_with_time_limit(90, is_distinguishing_tree_bounded(
+        NumPos,
+        NumQs,
+        QComplexity,
+        GodTypes,
+        _Tree,
+        Generator
+    )).
+
+:- end_tests(solve_final_challenge_with_paradox).
