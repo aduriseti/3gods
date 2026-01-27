@@ -275,39 +275,39 @@ test('all_disjoint/1 fails if any two sets overlap', [fail]) :- all_disjoint([[a
 % With unknown language, signatures include results from BOTH languages.
 
 test('get_family_signature_set for "all truly" family includes both [da] and [ja]') :-
-    Tree = tree(q(1, true), leaf, leaf, leaf),
+    Tree = tree(q(1, true), leaf([]), leaf([]), leaf([])),
     build_uniform_family(1, truly, Family),
     % Truth: da_yes -> da, da_no -> ja.
     get_family_signature_set(Tree, /*num_questions=*/1, Family, [[da], [ja]]).
 
 test('get_family_signature_set for "all falsely" family includes both [da] and [ja]') :-
-    Tree = tree(q(1, true), leaf, leaf, leaf),
+    Tree = tree(q(1, true), leaf([]), leaf([]), leaf([])),
     build_uniform_family(1, falsely, Family),
     % Falsely: da_yes -> ja, da_no -> da.
     get_family_signature_set(Tree, /*num_questions=*/1, Family, [[da], [ja]]).
 
 test('get_family_signature_set for "all random" family is [da, ja, silent]') :-
-    Tree = tree(q(1, true), leaf, leaf, leaf),
+    Tree = tree(q(1, true), leaf([]), leaf([]), leaf([])),
     build_uniform_family(1, random, Family),
     % Random: da, ja, and silent are possible.
     get_family_signature_set(Tree, /*num_questions=*/1, Family, [[da], [ja], [silent]]).
 
 test('2-question tree with "all truly" family has outcomes [da, da] and [ja, ja]') :-
-    Tree = tree(q(1, true), tree(q(1, true), leaf, leaf, leaf), tree(q(1, true), leaf, leaf, leaf), leaf),
+    Tree = tree(q(1, true), tree(q(1, true), leaf([]), leaf([]), leaf([])), tree(q(1, true), leaf([]), leaf([]), leaf([])), leaf([])),
     build_uniform_family(1, truly, Family),
     % Lang Yes: T->da, T->da.
     % Lang No:  T->ja, T->ja.
     get_family_signature_set(Tree, /*num_questions=*/2, Family, [[da, da], [ja, ja]]).
 
 test('2-question tree with "all falsely" family has outcomes [ja, ja] and [da, da]') :-
-    Tree = tree(q(1, true), tree(q(1, true), leaf, leaf, leaf), tree(q(1, true), leaf, leaf, leaf), leaf),
+    Tree = tree(q(1, true), tree(q(1, true), leaf([]), leaf([]), leaf([])), tree(q(1, true), leaf([]), leaf([]), leaf([])), leaf([])),
     build_uniform_family(1, falsely, Family),
     % Lang Yes: F->ja, F->ja.
     % Lang No:  F->da, F->da.
     get_family_signature_set(Tree, /*num_questions=*/2, Family, [[da, da], [ja, ja]]).
 
 test('2-question tree with "all random" family has all 9 possible outcomes') :-
-    Tree = tree(q(1, true), tree(q(1, true), leaf, leaf, leaf), tree(q(1, true), leaf, leaf, leaf), tree(q(1, true), leaf, leaf, leaf)),
+    Tree = tree(q(1, true), tree(q(1, true), leaf([]), leaf([]), leaf([])), tree(q(1, true), leaf([]), leaf([]), leaf([])), tree(q(1, true), leaf([]), leaf([]), leaf([]))),
     build_uniform_family(1, random, Family),
     ExpectedSet = [
         [da, da], [da, ja], [da, silent],

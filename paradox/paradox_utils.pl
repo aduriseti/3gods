@@ -34,8 +34,12 @@ draw_tree(Tree, Mode) :-
     writeln(''),
     draw_tree_rec(Tree, "", Mode).
 
-draw_tree_rec(leaf, _Prefix, _Mode) :-
-    writeln('  -> SOLVED').
+draw_tree_rec(leaf(Families), _Prefix, _Mode) :-
+    (   Families = [candidate(Positions, _)|_]
+    ->  maplist(arg(2), Positions, Gods), % Extract GodType from pos(Id, GodType, _)
+        format('  -> SOLVED: ~w~n', [Gods])
+    ;   writeln('  -> SOLVED (Empty)')
+    ).
 
 draw_tree_rec(tree(q(Pos, Q), DaTree, JaTree, SilentTree), Prefix, Mode) :-
     (   Mode == raw

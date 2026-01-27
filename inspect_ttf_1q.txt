@@ -1,0 +1,7 @@
+Ask God 1: "(If G2 asked 'True', say da XOR (Paradox OR Is G1 truly))"?
+/ (da)
+  -> SOLVED: [truly,falsely,truly]
+| (ja)
+  -> SOLVED: [truly,truly,falsely]
+\ (silent)
+  -> SOLVED: [falsely,truly,truly]

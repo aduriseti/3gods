@@ -273,7 +273,7 @@ generate_pos_list([pos(P, God, _)|T], NumQs, [pos(P, God, RndAns)|W]) :-
 % get_answer_path(Tree, World, PathOfAnswersFromTreeRoot, PathOfAnswers)
 % Simulates the questioning process for a given tree and world.
 get_answer_path(Tree, World, Path) :- get_answer_path_recursive(Tree, World, [], Path).
-get_answer_path_recursive(leaf, _, _, []).
+get_answer_path_recursive(leaf(_), _, _, []).
 get_answer_path_recursive(tree(q(Pos, Q), DaT, JaT, SilentT), World, PathSoFar, [Ans|Rest]) :-
     query_position_3state(Pos, Q, PathSoFar, World, Ans), % Ans will be da, ja, or silent
     (
@@ -571,9 +571,9 @@ is_distinguishing_tree_bounded(NumPos, NumQs, QComplexity, GodTypes, Tree, Gener
 % Signature: find_pruning_tree(TotalNumQs, CurrentDepth, MaxQComp, NumPos, CanonicalFamilies, CurrentFamilies, Tree)
 
 % --- Base Cases (use CurrentDepth) ---
-find_pruning_tree(_, _, _, _, _, [], leaf).
-find_pruning_tree(_, _, _, _, _, [_Candidate], leaf).
-find_pruning_tree(_, 0, _, _, _, Candidates, leaf) :- % Base case for depth
+find_pruning_tree(_, _, _, _, _, [], leaf([])).
+find_pruning_tree(_, _, _, _, _, [Candidate], leaf([Candidate])).
+find_pruning_tree(_, 0, _, _, _, Candidates, leaf(Candidates)) :- % Base case for depth
     (length(Candidates, 1) -> true ; !, fail). % Ran out of depth
 
 % --- Recursive Pruning Step (Corrected) ---
