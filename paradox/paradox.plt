@@ -1,7 +1,7 @@
 % :- use_module(library(lists)).
 :- use_module(library(plunit)).
 :- consult('paradox.pl').
-:- assert(current_log_level(debug)).
+:- assert(current_log_level(info)).
 
 :- begin_tests(kleene_logic).
 
@@ -50,40 +50,49 @@ test('evaluate_3state handles "Did he say da?" correctly when God is Silent') :-
 
 :- begin_tests(simple_signatures).
 
-test('Truly signature for "1==1?" is [[[[da, ja]]]]') :-
+test('Truly signature for true is [[[[da, ja]]]]') :-
     NumPos = 1, NumQs = 1,
     generate_canonical_combinations(NumPos, [truly], FamilyT_Template),
     maplist(wrap_family_in_candidate([da_yes, da_no]), [FamilyT_Template], Families),
     get_evaluate_signature(true, NumPos, NumQs, Families, Sig),
-    assertion(Sig == sig([true], [[[da, ja]]])).
-
-test('Falsely signature for "1==1?" is [[[[da, ja]]]]') :-
-    NumPos = 1, NumQs = 1,
-    generate_canonical_combinations(NumPos, [truly], FamilyT_Template),
-    maplist(wrap_family_in_candidate([da_yes, da_no]), [FamilyT_Template], Families),
-    get_evaluate_signature(true, NumPos, NumQs, Families, Sig),
-    assertion(Sig == sig([true], [[[da, ja]]])).
-
-test('Random signature for query_position_question(1, true) is [[[[da, ja, silent]]]]') :-
-    NumPos = 1, NumQs = 1,
-    generate_canonical_combinations(NumPos, [random], FamilyR_Template),
-    maplist(wrap_family_in_candidate([da_yes, da_no]), [FamilyR_Template], Families),
-    get_evaluate_signature(query_position_question(1, true), NumPos, NumQs, Families, Sig),
-    assertion(Sig == sig([fail, true], [[[da, ja, silent]]])).
+    assertion(Sig == sig([[true]], [[[da, ja]]])).
 
 test('Truly signature for query_position_question(1, true) is [[[[da]]]] (Invariant)') :-
     NumPos = 1, NumQs = 1,
     generate_canonical_combinations(NumPos, [truly], FamilyT_Template),
     maplist(wrap_family_in_candidate([da_yes, da_no]), [FamilyT_Template], Families),
     get_evaluate_signature(query_position_question(1, true), NumPos, NumQs, Families, Sig),
-    assertion(Sig == sig([fail, true], [[[da]]])).
+    assertion(Sig == sig([[fail, true]], [[[da]]])).
 
 test('Falsely signature for query_position_question(1, true) is [[[[da]]]] (Invariant)') :-
     NumPos = 1, NumQs = 1,
     generate_canonical_combinations(NumPos, [falsely], FamilyF_Template),
     maplist(wrap_family_in_candidate([da_yes, da_no]), [FamilyF_Template], Families),
     get_evaluate_signature(query_position_question(1, true), NumPos, NumQs, Families, Sig),
-    assertion(Sig == sig([fail, true], [[[da]]])).
+    % Falsely behaves INVARIANTLY on "Did I say da?" (Calculated [da]).
+    assertion(Sig == sig([[fail, true]], [[[da]]])).
+
+test('Truly signature for query_position_question(1, at_position_question(1, truly)) is [[[[da]]]] (Invariant)') :-
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [truly], FamilyT_Template),
+    maplist(wrap_family_in_candidate([da_yes, da_no]), [FamilyT_Template], Families),
+    get_evaluate_signature(query_position_question(1, at_position_question(1, truly)), NumPos, NumQs, Families, Sig),
+    assertion(Sig == sig([[fail, true]], [[[da]]])).
+
+test('Falsely signature for query_position_question(1, at_position_question(1, truly)) is [[[[ja]]]] (Invariant)') :-
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [falsely], FamilyF_Template),
+    maplist(wrap_family_in_candidate([da_yes, da_no]), [FamilyF_Template], Families),
+    get_evaluate_signature(query_position_question(1, at_position_question(1, truly)), NumPos, NumQs, Families, Sig),
+    % Falsely behaves INVARIANTLY on nested identity check (Calculated [ja]).
+    assertion(Sig == sig([[fail, true]], [[[ja]]])).
+
+test('Random signature for query_position_question(1, true) is [[[[da, ja, silent]]]]') :-
+    NumPos = 1, NumQs = 1,
+    generate_canonical_combinations(NumPos, [random], FamilyR_Template),
+    maplist(wrap_family_in_candidate([da_yes, da_no]), [FamilyR_Template], Families),
+    get_evaluate_signature(query_position_question(1, true), NumPos, NumQs, Families, Sig),
+    assertion(Sig == sig([[fail, true]], [[[da, ja, silent]]])).
 
 :- end_tests(simple_signatures).
 
@@ -127,10 +136,16 @@ test('Generate universe for complexity 1 and count distinct signatures') :-
     findall(F, generate_permutation_families(3, [truly, falsely, random], F), Families),
     my_nub(Families, UniqueFamilyTemplates),
     maplist(wrap_family_in_candidate([da_yes, da_no]), UniqueFamilyTemplates, UniqueFamilies),
-    % Reduced NumQs to 1 for speed (Random 3^1 vs 3^3).
-    call_with_time_limit(10, generate_universe(3, 1, UniqueFamilies, 1)),
+    
+    % Reverted NumQs to 3.
+    call_with_time_limit(20, generate_universe(3, 1, UniqueFamilies, 3)),
+    
     call_with_time_limit(10, predicate_property(distinct_q(_,_,_), number_of_clauses(Count))),
     writeln(distinct_count_comp1(Count)),
+    
+    writeln('--- ALL DISTINCT QUESTIONS ---'),
+    forall(distinct_q(Q, Sig, C), format('C=~w Q=~w Sig=~w~n', [C, Q, Sig])),
+    
     assertion(Count =< 365).
 
 % test('Generate universe for complexity 2 and count distinct signatures') :-
@@ -169,10 +184,10 @@ test('invert_answer_set inverts [fail] to [true]') :-
     invert_answer_set([fail], [true]).
 
 test('invert_signature inverts a sig compound') :- 
-    % New structure: sig(GlobalLogic, [ [Utt_P1_F1...], [Utt_P1_F2...] ])
-    Sig = sig([true, fail], [[[da], [ja]]]), 
+    % New structure: sig([Log_F1...], [ [Utt_P1_F1...], ... ])
+    Sig = sig([[true], [fail]], [[[da], [ja]]]), 
     invert_signature(Sig, InvSig), 
-    InvSig = sig([fail, true], [[[ja], [da]]]).
+    InvSig = sig([[fail], [true]], [[[ja], [da]]]).
 
 :- end_tests(signature_inversion).
 

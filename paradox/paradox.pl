@@ -428,10 +428,10 @@ process_candidates([Q|Rest], C, NumPos, NumQs, Families) :-
     process_candidates(Rest, C, NumPos, NumQs, Families).
 
 % Inverts a signature to check for symmetry.
-% Sig: sig(Log, [ [U_F1_P1, U_F1_P2], [U_F2_P1...] ])
-invert_signature(sig(Log, PosUtts), sig(InvLog, InvPosUtts)) :-
-    invert_answer_set(Log, InvLog), % Log is a flat set of atoms.
-    maplist(maplist(invert_answer_set), PosUtts, InvPosUtts).
+% Sig: sig(LogList, PosUttsList) - Both are lists parallel to Families.
+invert_signature(sig(LogList, PosUttsList), sig(InvLogList, InvPosUttsList)) :-
+    maplist(invert_answer_set, LogList, InvLogList),
+    maplist(maplist(invert_answer_set), PosUttsList, InvPosUttsList).
 
 invert_answer_set(Set, InvSet) :-
     maplist(invert_atom, Set, InvList),
@@ -445,12 +445,10 @@ invert_atom(silent, silent).
 invert_atom(paradox, paradox).
 
 % Computes the signature of `evaluate(Q)` across all worlds in Families.
-% Returns sig(LogicalSig, ListOfFamilyPositionalUtterances).
-get_evaluate_signature(Q, NumPos, NumQs, Families, sig(LogicalSig, UtteranceSig)) :-
+% Returns sig(ListOfFamilyLogicalSigs, ListOfFamilyPositionalUtterances).
+get_evaluate_signature(Q, NumPos, NumQs, Families, sig(LogicSigList, UtteranceSig)) :-
     maplist(get_family_eval_set(Q, NumPos, NumQs), Families, Pairs),
-    maplist(arg(1), Pairs, LogicSets),
-    flatten(LogicSets, FlatLog),
-    sort(FlatLog, LogicalSig), % Global distinct logic values
+    maplist(arg(1), Pairs, LogicSigList), % Keep list of lists
     maplist(arg(2), Pairs, UtteranceSig). % List of Lists of UtteranceSets
 
 % Helper to get the set of unique answers a specific family gives to Q
