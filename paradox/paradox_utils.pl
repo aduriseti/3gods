@@ -82,6 +82,7 @@ render_question_short((Q1 xor Q2), S) :-
     format(string(S), "(~s XOR ~s)", [S1, S2]).
 render_question_short(true, "True").
 render_question_short(fail, "False").
+render_question_short(paradox_universal, "Paradox").
 
 % render_question(QuestionTerm, OutputString)
 % Translates a question data structure into an English string.
@@ -89,6 +90,7 @@ render_question_short(fail, "False").
 % --- Base Cases ---
 render_question(true, "1 == 1?").
 render_question(fail, "1 == 0?").
+render_question(paradox_universal, "Is this statement a paradox?").
 render_question(at_position_question(Pos, God), String) :-
     format(string(String), "Is the god at position `~w` the `~w` god?", [Pos, God]).
 

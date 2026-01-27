@@ -1,4 +1,4 @@
-% :- use_module(library(lists)).
+:- use_module(library(lists)).
 
 iamrunningthelatestversion.
 
@@ -184,6 +184,7 @@ god_utterance(random, _, RandomAnswers, Path, Lang, Utterance) :-
 % Base Case 1: Trivial questions are allowed.
 is_question(_, _, true).
 is_question(_, _, fail).
+is_question(_, _, paradox_universal).
 
 % Base Case 2: Questions about the world are allowed.
 is_question(NumPos, _, at_position_question(Pos, God)) :-
@@ -346,35 +347,25 @@ generate_universe(NumPos, MaxComplexity, CanonicalFamilies, NumQs) :-
     init_distinct_generator,
 
     length(CanonicalFamilies, NumFamilies),
-    MaxQuestions is ceil((3^NumFamilies) / 2),
-    log(info, 'Max distinct questions limit set to: ~w (ceil(3^~w / 2))', [MaxQuestions, NumFamilies]),
+    log(info, 'Generating universe for ~w families. No hard cap.', [NumFamilies]),
     
     % Complexity 0 (Base Cases)
     generate_base_cases(NumPos, BaseQuestions),
-    process_candidates(BaseQuestions, 0, NumQs, CanonicalFamilies, MaxQuestions),
+    process_candidates(BaseQuestions, 0, NumPos, NumQs, CanonicalFamilies),
     
     % Iterative Step - Run loop, catch failure or explicit stop
-    (   run_generation_loop(NumPos, MaxComplexity, NumQs, CanonicalFamilies, MaxQuestions)
+    (   run_generation_loop(NumPos, MaxComplexity, NumQs, CanonicalFamilies)
     ->  true
     ;   true
     ).
 
-run_generation_loop(NumPos, MaxComplexity, NumQs, CanonicalFamilies, MaxQuestions) :-
+run_generation_loop(NumPos, MaxComplexity, NumQs, CanonicalFamilies) :-
     between(1, MaxComplexity, C),
     
-    % Check if we already hit the limit before generating complex candidates
-    predicate_property(distinct_q(_,_,_), number_of_clauses(CurrentCount)),
-    (   CurrentCount >= MaxQuestions
-    ->  log(info, 'Hit max question limit (~w). Stopping generation.', [MaxQuestions]),
-        !, fail % Cut choicepoints and FAIL the loop to exit
-    ;   true
-    ),
-
     generate_candidates_at_complexity(C, NumPos, Candidates),
     length(Candidates, NumCandidates),
     log(info, 'Generated ~w candidates at complexity ~w', [NumCandidates, C]),
-    process_candidates(Candidates, C, NumQs, CanonicalFamilies, MaxQuestions),
-    % get # of distinct questions so far
+    process_candidates(Candidates, C, NumPos, NumQs, CanonicalFamilies),
     predicate_property(distinct_q(_,_,_), number_of_clauses(N)),
     log(info, 'Distinct questions so far: ~w', [N]),
     fail. % Force loop through all complexities
@@ -383,10 +374,11 @@ run_generation_loop(NumPos, MaxComplexity, NumQs, CanonicalFamilies, MaxQuestion
 generate_base_cases(NumPos, Questions) :-
     findall(true, true, L1),
     findall(fail, true, L2),
+    findall(paradox_universal, true, L3),
     findall(at_position_question(Pos, God),
             (is_position(NumPos, Pos), is_god(God)),
-            L3),
-    append([L1, L2, L3], Questions).
+            L4),
+    append([L1, L2, L3, L4], Questions).
 
 % Generates candidate questions at a specific complexity C > 0
 generate_candidates_at_complexity(C, NumPos, Candidates) :-
@@ -419,14 +411,8 @@ candidate_at_complexity(C, _, (Q1 xor Q2)) :-
 
 % Processes a list of candidate questions: computes signatures and stores new ones.
 process_candidates([], _, _, _, _).
-process_candidates(_, _, _, _, MaxQuestions) :-
-    predicate_property(distinct_q(_,_,_), number_of_clauses(Count)),
-    Count >= MaxQuestions,
-    !,
-    log(debug, 'Max questions limit reached (~w). Pruning remaining candidates.', [MaxQuestions]).
-process_candidates([Q|Rest], C, NumQs, Families, MaxQuestions) :-
-    % ... (comments about signature logic) ...
-    get_evaluate_signature(Q, NumQs, Families, Sig),
+process_candidates([Q|Rest], C, NumPos, NumQs, Families) :-
+    get_evaluate_signature(Q, NumPos, NumQs, Families, Sig),
     
     invert_signature(Sig, InvSig),
 
@@ -439,49 +425,63 @@ process_candidates([Q|Rest], C, NumQs, Families, MaxQuestions) :-
         predicate_property(distinct_q(_,_,_), number_of_clauses(N)),
         log(debug, 'Distinct questions so far: ~w', [N])
     ),
-    process_candidates(Rest, C, NumQs, Families, MaxQuestions).
+    process_candidates(Rest, C, NumPos, NumQs, Families).
 
-% Inverts a signature (List of answer sets) to check for symmetry.
-% Symmetry: Q splits families into (A, B). "not Q" splits into (B, A).
-% Since A, B partition the space, {A, B} is the same partition as {B, A}.
-invert_signature(sig(Log, Utt), sig(InvLog, InvUtt)) :-
-    maplist(invert_answer_set, Log, InvLog),
-    maplist(invert_answer_set, Utt, InvUtt).
+% Inverts a signature to check for symmetry.
+% Sig: sig(Log, [ [U_F1_P1, U_F1_P2], [U_F2_P1...] ])
+invert_signature(sig(Log, PosUtts), sig(InvLog, InvPosUtts)) :-
+    invert_answer_set(Log, InvLog), % Log is a flat set of atoms.
+    maplist(maplist(invert_answer_set), PosUtts, InvPosUtts).
 
 invert_answer_set(Set, InvSet) :-
     maplist(invert_atom, Set, InvList),
     sort(InvList, InvSet).
-
 
 invert_atom(true, fail).
 invert_atom(fail, true).
 invert_atom(da, ja).
 invert_atom(ja, da).
 invert_atom(silent, silent).
+invert_atom(paradox, paradox).
 
 % Computes the signature of `evaluate(Q)` across all worlds in Families.
-% Returns sig(LogicalSig, UtteranceSig).
-get_evaluate_signature(Q, NumQs, Families, sig(LogicalSig, UtteranceSig)) :-
-    maplist(get_family_eval_set(Q, NumQs), Families, Pairs),
-    maplist(arg(1), Pairs, LogicalSig),
-    maplist(arg(2), Pairs, UtteranceSig).
+% Returns sig(LogicalSig, ListOfFamilyPositionalUtterances).
+get_evaluate_signature(Q, NumPos, NumQs, Families, sig(LogicalSig, UtteranceSig)) :-
+    maplist(get_family_eval_set(Q, NumPos, NumQs), Families, Pairs),
+    maplist(arg(1), Pairs, LogicSets),
+    flatten(LogicSets, FlatLog),
+    sort(FlatLog, LogicalSig), % Global distinct logic values
+    maplist(arg(2), Pairs, UtteranceSig). % List of Lists of UtteranceSets
 
 % Helper to get the set of unique answers a specific family gives to Q
-get_family_eval_set(Q, NumQs, candidate(FamilyTemplate, AllowedLangs), pair(LogicalSet, UtteranceSet)) :-
-    findall(pair(AnsToken, Utterance),
+% Returns pair(LogicalSet, ListOfUtteranceSets_PerPosition)
+get_family_eval_set(Q, NumPos, NumQs, candidate(FamilyTemplate, AllowedLangs), pair(LogicalSet, PositionalUtterances)) :-
+    % 1. Calculate Logical Truth of Q (Position Independent approximation)
+    findall(AnsToken,
             (   generate_worlds_from_templates(FamilyTemplate, NumQs, AllowedLangs, World),
                 evaluate_3state(Q, [], World, Val),
-                (Val == true -> AnsToken=true ; Val == false -> AnsToken=fail ; AnsToken=paradox),
-                World = w(_, Lang),
-                (Val == true -> get_utterance(true, Lang, Utterance)
-                ; Val == false -> get_utterance(fail, Lang, Utterance)
-                ; Utterance = silent
-                )
+                (Val == true -> AnsToken=true ; Val == false -> AnsToken=fail ; AnsToken=paradox)
             ),
-            RawPairs),
-    maplist(arg(1), RawPairs, LogRaw),
-    maplist(arg(2), RawPairs, UttRaw),
+            LogRaw),
     sort(LogRaw, LogicalSet),
+
+    % 2. Calculate Utterances for EACH Position
+    findall(P, between(1, NumPos, P), Positions),
+    maplist(get_position_utterance_set(Q, NumQs, FamilyTemplate, AllowedLangs), Positions, PositionalUtterances).
+
+% Helper: Get utterance set for a specific position P
+get_position_utterance_set(Q, NumQs, FamilyTemplate, AllowedLangs, Pos, UtteranceSet) :-
+    findall(Utterance,
+            (   generate_worlds_from_templates(FamilyTemplate, NumQs, AllowedLangs, World),
+                World = w(PosList, Lang),
+                % Find God at Pos
+                member(pos(Pos, GodType, RndAns), PosList),
+                % Evaluate Q (Logic)
+                evaluate_3state(Q, [], World, Val),
+                % Determine Utterance using REAL God Physics
+                god_utterance(GodType, Val, RndAns, [], Lang, Utterance)
+            ),
+            UttRaw),
     sort(UttRaw, UtteranceSet).
 
 % evaluate_on_world removed as it is no longer used directly by maplist
